@@ -1,9 +1,13 @@
 # NFC Reader/Writer for ACR1252U
 
-![Made With Claude Sonnet 3.5](https://img.shields.io/badge/Made_With-Claude_Sonnet_3.5-blue)
+![Made With Claude Sonnet 3.5](https://img.shields.io/badge/Made_With-Claude_Sonnet_3.5-blue)  
 ![Made With Cline IDE](https://img.shields.io/badge/Made_With-Cline_IDE-green)
 
 This is a Python implementation for reading and writing NFC tags using the ACR1252U NFC reader. It includes both a command-line interface and a graphical user interface.
+
+## Generated With Claude Sonnet 3.5 + Cline IDE!
+
+![alt text](screenshots/1.png)
 
 ## Prerequisites
 
