@@ -5,6 +5,17 @@
 
 This is a Python implementation for reading and writing NFC tags using the ACR1252U NFC reader. It includes both a command-line interface and a graphical user interface.
 
+## Screenshots (V3)
+
+![alt text](screenshots/v3/1.png)
+
+![alt text](screenshots/v3/2.png)
+
+![alt text](screenshots/v3/3.png)
+
+![alt text](screenshots/v3/4.png)
+
+
 ## Generated With Claude Sonnet 3.5 + Cline IDE!
 
 ![alt text](screenshots/1.png)
