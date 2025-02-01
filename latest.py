@@ -483,10 +483,16 @@ class NFCReaderGUI(QMainWindow):
                         # Check record type (both as bytes and as ASCII)
                         record_type_bytes = bytes(record_type)
                         if record_type_bytes == b'U' or (len(record_type) == 1 and record_type[0] == 0x55):  # URL Record
-                            url_prefix_byte = data[offset]  # First byte of payload is URL prefix
-                            content_bytes = data[offset+1:offset+1+payload_length-1]  # Rest is URL (-1 for prefix byte)
+                            # Debug raw data around the URL
+                            self.log_signal.emit("Debug", f"Raw data at offset: {self.toHexString(data[offset:offset+payload_length])}")
                             
-                            # URL prefixes
+                            url_prefix_byte = data[offset]  # First byte of payload is URL prefix
+                            content_bytes = data[offset+1:offset+payload_length]  # Rest is URL
+                            
+                            # Debug the raw URL prefix byte
+                            self.log_signal.emit("Debug", f"URL prefix byte: 0x{url_prefix_byte:02X}")
+                            
+                            # URL prefixes according to NFC Forum URI Record Type Definition
                             url_prefixes = {
                                 0x00: "http://www.",
                                 0x01: "https://www.",
@@ -494,10 +500,86 @@ class NFCReaderGUI(QMainWindow):
                                 0x03: "https://",
                                 0x04: "tel:",
                                 0x05: "mailto:",
+                                0x06: "ftp://anonymous:anonymous@",
+                                0x07: "ftp://ftp.",
+                                0x08: "ftps://",
+                                0x09: "sftp://",
+                                0x0A: "smb://",
+                                0x0B: "nfs://",
+                                0x0C: "ftp://",
+                                0x0D: "dav://",
+                                0x0E: "news:",
+                                0x0F: "telnet://",
+                                0x10: "imap:",
+                                0x11: "rtsp://",
+                                0x12: "urn:",
+                                0x13: "pop:",
+                                0x14: "sip:",
+                                0x15: "sips:",
+                                0x16: "tftp:",
+                                0x17: "btspp://",
+                                0x18: "btl2cap://",
+                                0x19: "btgoep://",
+                                0x1A: "tcpobex://",
+                                0x1B: "irdaobex://",
+                                0x1C: "file://",
+                                0x1D: "urn:epc:id:",
+                                0x1E: "urn:epc:tag:",
+                                0x1F: "urn:epc:pat:",
+                                0x20: "urn:epc:raw:",
+                                0x21: "urn:epc:",
+                                0x22: "urn:nfc:",
                             }
                             
-                            prefix = url_prefixes.get(url_prefix_byte, "")
-                            url = prefix + bytes(content_bytes).decode('utf-8')
+                            # Get the URL content first
+                            url_content = bytes(content_bytes).decode('utf-8')
+                            self.log_signal.emit("Debug", f"URL content before prefix: {url_content}")
+                            
+                            # Detect if the content looks like a web URL despite the prefix
+                            looks_like_web = any(
+                                url_content.startswith(domain_part) for domain_part in [
+                                    "www.", 
+                                    "http", # Will match http:// or https://
+                                    # Common domain patterns
+                                    "github.com",
+                                    "gitlab.com",
+                                    "bitbucket.org",
+                                    "homebox.",
+                                    "box.",
+                                    "docs.",
+                                    "drive."
+                                ]
+                            ) or any(
+                                "." + tld in url_content.lower() for tld in [
+                                    "com",
+                                    "org",
+                                    "net",
+                                    "edu",
+                                    "gov",
+                                    "io",
+                                    "app"
+                                ]
+                            )
+                            
+                            # Get prefix from byte, but override if content looks like a web URL
+                            original_prefix = url_prefixes.get(url_prefix_byte, "")
+                            if looks_like_web and original_prefix in ["tel:", "mailto:"]:
+                                self.log_signal.emit("Debug", f"Overriding {original_prefix} prefix with http:// for web-like URL")
+                                prefix = "http://"
+                            else:
+                                prefix = original_prefix
+                                if prefix:
+                                    self.log_signal.emit("Debug", f"Using original prefix: {prefix}")
+                                else:
+                                    self.log_signal.emit("Debug", f"Unknown URL prefix byte: 0x{url_prefix_byte:02X}")
+                            
+                            # Construct full URL
+                            url = prefix + url_content
+                            
+                            # Additional validation for tel: URLs
+                            if url.startswith("tel:") and not url_content.replace("+","").replace("-","").replace(".","").isdigit():
+                                self.log_signal.emit("Debug", "Converting invalid tel: URL to http://")
+                                url = "http://" + url_content
                             self.log_signal.emit("Debug", f"URL prefix: {prefix}")
                             self.log_signal.emit("Debug", f"URL content: {bytes(content_bytes).decode('utf-8')}")
                             self.log_signal.emit("URL Detected", f"Complete URL: {url}")
@@ -669,10 +751,23 @@ class NFCReaderGUI(QMainWindow):
                         
                         prefix_found = None
                         remaining_text = text
-            
+                        
+                        # Detect if the text looks like a web URL
+                        looks_like_web = any(
+                            "." + tld in text.lower() for tld in [
+                                "com",
+                                "org",
+                                "net",
+                                "edu",
+                                "gov",
+                                "io",
+                                "app"
+                            ]
+                        )
+                        
                         # Determine record type and data
                         if text.startswith(('http://www.', 'https://www.', 'http://', 'https://')):
-                            # This is a web URL, find the matching prefix
+                            # This is a web URL with explicit prefix
                             for prefix, code in url_prefixes.items():
                                 if text.startswith(prefix):
                                     prefix_found = code
@@ -687,6 +782,12 @@ class NFCReaderGUI(QMainWindow):
                                 # Fallback to text if no prefix matched
                                 ndef_header = [0xD1, 0x01, len(text_bytes) + 1] + [0x54] + [0x00]  # Type: T (Text)
                                 record_data = text_bytes
+                        elif looks_like_web:
+                            # This looks like a web URL without explicit prefix, add http://
+                            prefix_found = 0x02  # http://
+                            remaining_bytes = list(text.encode('utf-8'))
+                            ndef_header = [0xD1, 0x01, len(remaining_bytes) + 1] + [0x55]  # Type: U (URL)
+                            record_data = [prefix_found] + remaining_bytes
                         else:
                             # Store as plain text (including tel: and mailto: URLs)
                             ndef_header = [0xD1, 0x01, len(text_bytes) + 1] + [0x54] + [0x00]  # Type: T (Text)
