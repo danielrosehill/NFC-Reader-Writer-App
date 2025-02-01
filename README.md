@@ -3,9 +3,19 @@
 ![Made With Claude Sonnet 3.5](https://img.shields.io/badge/Made_With-Claude_Sonnet_3.5-blue)  
 ![Made With Cline IDE](https://img.shields.io/badge/Made_With-Cline_IDE-green)
 
-This is a Python implementation for reading and writing NFC tags using the ACR1252U NFC reader. It includes both a command-line interface and a graphical user interface.
+This is a Python implementation for reading and writing NFC tags using the ACR1252U NFC reader. The application features a modern dark-themed PyQt6 graphical interface with comprehensive NFC tag reading and writing capabilities.
 
-## Screenshots (V3)
+## Key Features
+
+- Modern dark-themed PyQt6 interface
+- Real-time URL detection with clipboard support
+- Comprehensive NDEF message interpretation
+- Batch writing capability
+- Tag locking functionality
+- Detailed debug logging
+- Chrome browser integration
+
+## Screenshots (V3 - Outdated)
 
 ![alt text](screenshots/v3/1.png)
 
@@ -20,20 +30,27 @@ This is a Python implementation for reading and writing NFC tags using the ACR12
 
 ![alt text](screenshots/1.png)
 
+## My Testing Environment
+
+- OpenSUSE Tumbleweed + KDE Plasma
+
+## My Notes
+
+---
+
+# Claude Generated Readme
+
 ## Prerequisites
 
 - Python 3.x
 - OpenSUSE packages:
   ```bash
   sudo zypper install pcsc-lite-devel
-  sudo zypper install python312-tk  # For GUI support
   ```
 - Python packages:
   ```bash
-  pip install pyscard
+  pip install pyscard PyQt6
   ```
-
-Note: The GUI version requires tkinter, which is installed via python312-tk package on OpenSUSE.
 
 ## Usage
 
@@ -69,20 +86,24 @@ The GUI version provides:
   1. Read Tab:
      - Continuous tag scanning
      - Real-time status updates
+     - URL detection display with copy functionality
      - Detailed debug output showing:
        * Raw tag data
        * NDEF structure parsing
        * Content interpretation
        * URL detection steps
      - Automatic URL opening in Chrome
-     - Comprehensive log display
+     - Comprehensive log display with copy/clear functions
   2. Write Tab:
      - Smart URL/Text detection
      - Proper NDEF formatting for both URLs and text
+     - Batch writing support
      - Optional tag locking after writing
      - Debug output of written data
+     - Progress tracking for batch operations
      - Status feedback
 - Thread-safe operation
+- Dark theme for improved visibility
 
 ### NTAG213 Support
 - Optimized for NTAG213 memory structure
@@ -107,6 +128,8 @@ The GUI version provides:
   * Text records (Type T)
 - NTAG213 memory layout compliance
 - Tag locking support
+- Batch writing capability
+- Progress tracking
 - Debug output of written data
 
 ## Interface Commands
@@ -120,14 +143,18 @@ The GUI version provides:
 ### GUI Interface
 #### Read Tab
 - Start/Stop Scanning button
-- Real-time log display
+- Real-time log display with copy/clear functions
+- URL detection display with copy support
 - Automatic URL handling
+- Detailed debug logging
 
 #### Write Tab
 - Text/URL input field
+- Batch quantity selector
 - Lock tag checkbox
 - Write button
-- Status display
+- Progress tracking
+- Status display with clear function
 
 ## Error Handling
 

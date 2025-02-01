@@ -1,4 +1,8 @@
- 
+# V5
+
+- Detected URL is displayed
+- Expanded NDEF interpretation for handling all pages on tags
+
 # V3
 
 - Dark theme 
