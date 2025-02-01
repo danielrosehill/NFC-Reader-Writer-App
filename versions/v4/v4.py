@@ -334,17 +334,35 @@ class NFCReaderGUI(QMainWindow):
     def read_tag_memory(self, connection) -> List[int]:
         """Read NTAG213 memory pages."""
         all_data = []
-        for page in range(4, 40):
+        found_terminator = False
+        
+        # Start reading from page 4 (first user data page)
+        for page in range(4, 40):  # NTAG213 has pages 0-40
             try:
                 read_cmd = self.READ_PAGE + [page, 0x04]
                 response, sw1, sw2 = connection.transmit(read_cmd)
+                
                 if sw1 == 0x90:
                     all_data.extend(response)
                     self.log_signal.emit("Debug", f"Page {page}: {self.toHexString(response)}")
+                    
+                    # Check for NDEF terminator (0xFE)
+                    if 0xFE in response:
+                        found_terminator = True
+                        # Include the terminator but trim any data after it
+                        terminator_index = len(all_data) - (4 - response.index(0xFE))
+                        all_data = all_data[:terminator_index + 1]
+                        break
                 else:
+                    self.log_signal.emit("Debug", f"Failed to read page {page}: SW1={sw1:02X} SW2={sw2:02X}")
                     break
-            except:
+            except Exception as e:
+                self.log_signal.emit("Debug", f"Error reading page {page}: {str(e)}")
                 break
+        
+        if not found_terminator:
+            self.log_signal.emit("Debug", "Warning: NDEF terminator (0xFE) not found")
+            
         return all_data
 
     def toggle_scanning(self):
@@ -458,12 +476,17 @@ class NFCReaderGUI(QMainWindow):
                                 0x01: "https://www.",
                                 0x02: "http://",
                                 0x03: "https://",
-                                0x04: "tel:",
-                                0x05: "mailto:",
+                                0x04: "",  # Ignore tel: prefix
+                                0x05: "",  # Ignore mailto: prefix
                             }
                             
                             prefix = url_prefixes.get(url_prefix_byte, "")
                             url = prefix + bytes(content_bytes).decode('utf-8')
+                            
+                            # If it was a tel: or mailto: prefix, prepend http:// to make it a valid URL
+                            if url_prefix_byte in [0x04, 0x05]:
+                                url = "http://" + url
+                                
                             self.log_signal.emit("URL Detected", f"Complete URL: {url}")
                             
                             try:
