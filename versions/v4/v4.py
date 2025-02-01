@@ -24,6 +24,7 @@ class NFCReaderGUI(QMainWindow):
     log_signal = pyqtSignal(str, str)
     write_status_signal = pyqtSignal(str)
     progress_signal = pyqtSignal(str)
+    url_signal = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -56,6 +57,7 @@ class NFCReaderGUI(QMainWindow):
         self.log_signal.connect(self.append_log)
         self.write_status_signal.connect(self.update_write_status)
         self.progress_signal.connect(self.update_progress)
+        self.url_signal.connect(self.update_url_label)
         
         # Start checking for reader
         self.check_reader_timer = QTimer()
@@ -196,6 +198,20 @@ class NFCReaderGUI(QMainWindow):
         self.scan_button.clicked.connect(self.toggle_scanning)
         self.scan_button.setFixedWidth(200)
         layout.addWidget(self.scan_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        # URL Detection group
+        url_group = QGroupBox("Detected URL")
+        url_layout = QHBoxLayout(url_group)
+        self.url_label = QLabel("")
+        self.url_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.copy_url_button = QPushButton()
+        self.copy_url_button.setIcon(QIcon.fromTheme("edit-copy"))
+        self.copy_url_button.setToolTip("Copy URL to clipboard")
+        self.copy_url_button.clicked.connect(self.copy_detected_url)
+        self.copy_url_button.setFixedSize(30, 30)
+        url_layout.addWidget(self.url_label)
+        url_layout.addWidget(self.copy_url_button)
+        layout.addWidget(url_group)
         
         # Log group
         log_group = QGroupBox("Log")
@@ -488,6 +504,8 @@ class NFCReaderGUI(QMainWindow):
                                 url = "http://" + url
                                 
                             self.log_signal.emit("URL Detected", f"Complete URL: {url}")
+                            # Update URL detection box
+                            self.url_signal.emit(url)
                             
                             try:
                                 methods = [
@@ -550,6 +568,13 @@ class NFCReaderGUI(QMainWindow):
         except queue.Empty:
             pass
 
+    def copy_detected_url(self):
+        """Copy detected URL to clipboard."""
+        url = self.url_label.text()
+        if url:
+            QApplication.clipboard().setText(url)
+            self.log_signal.emit("System", "URL copied to clipboard")
+    
     def copy_log(self):
         """Copy log content to clipboard."""
         content = self.log_text.toPlainText()
@@ -584,6 +609,11 @@ class NFCReaderGUI(QMainWindow):
     def update_progress(self, text):
         """Update the progress label."""
         self.progress_label.setText(text)
+        
+    @pyqtSlot(str)
+    def update_url_label(self, text):
+        """Update the URL label."""
+        self.url_label.setText(text)
 
     def write_tag(self):
         """Write data to multiple tags."""
