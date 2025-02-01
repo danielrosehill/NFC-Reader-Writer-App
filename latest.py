@@ -503,7 +503,8 @@ class NFCReaderGUI(QMainWindow):
                             self.log_signal.emit("URL Detected", f"Complete URL: {url}")
                             self.url_signal.emit(url)
                             
-                            try:
+                            # Only try to open web URLs (not tel: or mailto:)
+                            if url.startswith(("http://", "https://")):
                                 # Try to open URL with different methods
                                 methods = [
                                     (['google-chrome', '--new-tab', url], "Chrome (new tab)"),
@@ -528,8 +529,6 @@ class NFCReaderGUI(QMainWindow):
                                 
                                 if not success:
                                     self.log_signal.emit("Error", "Failed to open URL with any method")
-                            except Exception as e:
-                                self.log_signal.emit("Error", f"Failed to open URL: {str(e)}")
                         elif record_type_bytes == b'T' or (len(record_type) == 1 and record_type[0] == 0x54):  # Text Record
                             # First byte contains text info
                             text_info = data[offset]
@@ -671,20 +670,25 @@ class NFCReaderGUI(QMainWindow):
                         prefix_found = None
                         remaining_text = text
             
-                        if any(text.startswith(prefix) for prefix in url_prefixes.keys()):
-                            # This is a URL, find the matching prefix
+                        # Determine record type and data
+                        if text.startswith(('http://www.', 'https://www.', 'http://', 'https://')):
+                            # This is a web URL, find the matching prefix
                             for prefix, code in url_prefixes.items():
                                 if text.startswith(prefix):
                                     prefix_found = code
                                     remaining_text = text[len(prefix):]
                                     break
-                            
-                            # URL record with prefix
-                            remaining_bytes = list(remaining_text.encode('utf-8'))
-                            ndef_header = [0xD1, 0x01, len(remaining_bytes) + 1] + [0x55]  # Type: U (URL)
-                            record_data = [prefix_found] + remaining_bytes
+                            if prefix_found is not None:
+                                # URL record with prefix
+                                remaining_bytes = list(remaining_text.encode('utf-8'))
+                                ndef_header = [0xD1, 0x01, len(remaining_bytes) + 1] + [0x55]  # Type: U (URL)
+                                record_data = [prefix_found] + remaining_bytes
+                            else:
+                                # Fallback to text if no prefix matched
+                                ndef_header = [0xD1, 0x01, len(text_bytes) + 1] + [0x54] + [0x00]  # Type: T (Text)
+                                record_data = text_bytes
                         else:
-                            # Text record
+                            # Store as plain text (including tel: and mailto: URLs)
                             ndef_header = [0xD1, 0x01, len(text_bytes) + 1] + [0x54] + [0x00]  # Type: T (Text)
                             record_data = text_bytes
                         
