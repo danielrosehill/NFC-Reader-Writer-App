@@ -22,18 +22,6 @@ class NFCReaderGUI:
         self.root.title("NFC Reader/Writer")
         self.root.geometry("800x600")
         
-        # Configure style
-        style = ttk.Style()
-        style.configure('TFrame', background='#f0f0f0')
-        style.configure('TLabel', background='#f0f0f0', font=('Helvetica', 10))
-        style.configure('TButton', font=('Helvetica', 10))
-        style.configure('Header.TLabel', font=('Helvetica', 12, 'bold'))
-        style.configure('Status.TLabel', font=('Helvetica', 10, 'italic'))
-        
-        # Configure root window
-        self.root.configure(bg='#f0f0f0')
-        self.root.option_add('*TCombobox*Listbox.font', ('Helvetica', 10))
-        
         # Initialize reader
         try:
             from smartcard.System import readers
@@ -46,13 +34,9 @@ class NFCReaderGUI:
             self.root.destroy()
             return
 
-        # Create main container with padding
-        main_container = ttk.Frame(self.root, padding="20 10 20 10", style='TFrame')
-        main_container.pack(expand=True, fill='both')
-        
-        # Create notebook for tabs with custom style
-        self.notebook = ttk.Notebook(main_container)
-        self.notebook.pack(expand=True, fill='both', padx=5, pady=5)
+        # Create notebook for tabs
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(expand=True, fill='both', padx=10, pady=5)
 
         # Create tabs
         self.read_frame = ttk.Frame(self.notebook)
@@ -80,41 +64,29 @@ class NFCReaderGUI:
         self.root.after(100, self.check_tag_queue)
 
     def setup_read_interface(self):
-        # Status label with custom style
-        status_frame = ttk.Frame(self.read_frame, style='TFrame')
-        status_frame.pack(fill='x', padx=20, pady=10)
-        self.status_label = ttk.Label(status_frame, text="Status: Waiting for reader...", 
-                                    style='Status.TLabel')
-        self.status_label.pack(side='left')
+        # Status label
+        self.status_label = ttk.Label(self.read_frame, text="Status: Waiting for reader...")
+        self.status_label.pack(pady=10)
 
-        # Scan button with improved style
-        button_frame = ttk.Frame(self.read_frame, style='TFrame')
-        button_frame.pack(fill='x', padx=20, pady=5)
-        self.scan_button = ttk.Button(button_frame, text="Start Scanning", 
-                                    command=self.toggle_scanning, width=20)
-        self.scan_button.pack()
+        # Scan button
+        self.scan_button = ttk.Button(self.read_frame, text="Start Scanning", command=self.toggle_scanning)
+        self.scan_button.pack(pady=5)
 
-        # Log text with improved styling
-        log_frame = ttk.LabelFrame(self.read_frame, text="Log", padding="10 5 10 10", style='TFrame')
-        log_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        # Log text with scrollbar
+        log_frame = ttk.Frame(self.read_frame)
+        log_frame.pack(fill='both', expand=True, pady=10)
         
-        # Make text selectable with improved font and colors
-        self.log_text = tk.Text(log_frame, height=25, width=80, state='normal',
-                               font=('Consolas', 10),
-                               bg='#ffffff',
-                               fg='#333333',
-                               selectbackground='#0078d7',
-                               selectforeground='#ffffff',
-                               padx=5, pady=5)
+        # Make text selectable
+        self.log_text = tk.Text(log_frame, height=25, width=80, state='normal')
         scrollbar = ttk.Scrollbar(log_frame, orient='vertical', command=self.log_text.yview)
         self.log_text.configure(yscrollcommand=scrollbar.set)
         
         self.log_text.pack(side='left', fill='both', expand=True)
         scrollbar.pack(side='right', fill='y')
 
-        # Button frame with improved layout
-        button_frame = ttk.Frame(self.read_frame, style='TFrame')
-        button_frame.pack(fill='x', padx=20, pady=10)
+        # Button frame
+        button_frame = ttk.Frame(self.read_frame)
+        button_frame.pack(pady=5)
         
         # Clear and Copy buttons side by side
         self.copy_button = ttk.Button(button_frame, text="Copy Log", command=self.copy_log)
@@ -124,70 +96,31 @@ class NFCReaderGUI:
         self.clear_button.pack(side='left', padx=5)
 
     def setup_write_interface(self):
-        # Write interface with improved layout
-        write_header = ttk.Label(self.write_frame, text="Enter URL or text to write:", 
-                               style='Header.TLabel')
-        write_header.pack(pady=(20,5), padx=20)
-        
-        # Content entry frame
-        entry_frame = ttk.Frame(self.write_frame, style='TFrame')
-        entry_frame.pack(fill='x', padx=20, pady=5)
-        self.write_entry = ttk.Entry(entry_frame, width=50, font=('Helvetica', 10))
-        self.write_entry.pack(fill='x', expand=True)
-        
-        # Batch writing frame
-        batch_frame = ttk.Frame(self.write_frame, style='TFrame')
-        batch_frame.pack(fill='x', padx=20, pady=5)
-        
-        ttk.Label(batch_frame, text="Number of tags to write:", 
-                 style='TLabel').pack(side='left', padx=(0,5))
-        
-        self.quantity_var = tk.StringVar(value="1")
-        self.quantity_spinbox = ttk.Spinbox(batch_frame, from_=1, to=100, 
-                                          width=5, textvariable=self.quantity_var)
-        self.quantity_spinbox.pack(side='left')
+        # Text entry
+        ttk.Label(self.write_frame, text="Enter URL or text to write:").pack(pady=5)
+        self.write_entry = ttk.Entry(self.write_frame, width=50)
+        self.write_entry.pack(pady=5)
 
-        # Options frame with improved layout
-        options_frame = ttk.Frame(self.write_frame, style='TFrame')
-        options_frame.pack(fill='x', padx=20, pady=10)
-        
-        # Lock checkbox with improved style
+        # Lock checkbox
         self.lock_var = tk.BooleanVar(value=True)
-        self.lock_checkbox = ttk.Checkbutton(options_frame, text="Lock tag after writing", 
-                                           variable=self.lock_var)
-        self.lock_checkbox.pack(side='left', padx=(0,10))
+        self.lock_checkbox = ttk.Checkbutton(self.write_frame, text="Lock tag after writing", variable=self.lock_var)
+        self.lock_checkbox.pack(pady=5)
 
-        # Write button with improved style
-        self.write_button = ttk.Button(options_frame, text="Write to Tag", 
-                                     command=self.write_tag, width=20)
-        self.write_button.pack(side='left')
+        # Write button
+        self.write_button = ttk.Button(self.write_frame, text="Write to Tag", command=self.write_tag)
+        self.write_button.pack(pady=10)
 
-        # Progress frame
-        self.progress_frame = ttk.LabelFrame(self.write_frame, text="Progress", 
-                                           padding="10 5 10 10", style='TFrame')
-        self.progress_frame.pack(fill='x', padx=20, pady=10)
-        
-        self.progress_var = tk.StringVar(value="")
-        self.progress_label = ttk.Label(self.progress_frame, 
-                                      textvariable=self.progress_var,
-                                      style='Status.TLabel')
-        self.progress_label.pack(fill='x', padx=5)
-        
         # Status frame
-        status_frame = ttk.LabelFrame(self.write_frame, text="Status", 
-                                    padding="10 5 10 10", style='TFrame')
-        status_frame.pack(fill='x', padx=20, pady=10)
+        status_frame = ttk.Frame(self.write_frame)
+        status_frame.pack(pady=5)
         
-        # Status label and clear button with improved layout
-        status_container = ttk.Frame(status_frame, style='TFrame')
-        status_container.pack(fill='x', expand=True)
+        # Status label and clear button
+        self.write_status = ttk.Label(status_frame, text="")
+        self.write_status.pack(side='left', padx=5)
         
-        self.write_status = ttk.Label(status_container, text="", style='Status.TLabel')
-        self.write_status.pack(side='left', padx=5, fill='x', expand=True)
-        
-        self.clear_status = ttk.Button(status_container, text="Clear Status", 
-            command=lambda: self.write_status.config(text=""), width=15)
-        self.clear_status.pack(side='right', padx=5)
+        self.clear_status = ttk.Button(status_frame, text="Clear Status", 
+            command=lambda: self.write_status.config(text=""))
+        self.clear_status.pack(side='left', padx=5)
 
     def check_reader(self):
         """Check for ACR1252U reader and update status."""
@@ -442,7 +375,7 @@ class NFCReaderGUI:
         self.tag_queue.put(("System", "Log cleared"))
 
     def write_tag(self):
-        """Write data to multiple tags."""
+        """Write data to tag and optionally lock it."""
         if not self.reader:
             messagebox.showerror("Error", "Reader not connected")
             return
@@ -451,141 +384,99 @@ class NFCReaderGUI:
         if not text:
             messagebox.showerror("Error", "Please enter text to write")
             return
-            
+
         try:
-            quantity = int(self.quantity_var.get())
-        except ValueError:
-            messagebox.showerror("Error", "Invalid quantity")
-            return
-            
-        if quantity < 1:
-            messagebox.showerror("Error", "Quantity must be at least 1")
-            return
-            
-        self.write_status.config(text="Waiting for tags...")
-        self.progress_var.set(f"Starting batch write: 0/{quantity} tags written")
-        
-        # Start batch writing in a separate thread
-        threading.Thread(target=self.batch_write_tags, 
-                       args=(text, quantity), 
-                       daemon=True).start()
+            connection = self.reader.createConnection()
+            connection.connect()
 
-    def batch_write_tags(self, text: str, quantity: int):
-        """Write the same data to multiple tags."""
-        tags_written = 0
-        last_uid = None
-        
-        while tags_written < quantity:
+            # Convert text to bytes
+            text_bytes = list(text.encode('utf-8'))
+            
+            # Create NDEF message for NTAG213
+            # Check if it's a URL and determine prefix
+            url_prefixes = {
+                'http://www.': 0x00,
+                'https://www.': 0x01,
+                'http://': 0x02,
+                'https://': 0x03,
+                'tel:': 0x04,
+                'mailto:': 0x05,
+            }
+            
+            prefix_found = None
+            remaining_text = text
+            
+            if any(text.startswith(prefix) for prefix in url_prefixes.keys()):
+                # This is a URL, find the matching prefix
+                for prefix, code in url_prefixes.items():
+                    if text.startswith(prefix):
+                        prefix_found = code
+                        remaining_text = text[len(prefix):]
+                        break
+                
+                # URL record with prefix
+                remaining_bytes = list(remaining_text.encode('utf-8'))
+                ndef_header = [0xD1, 0x01, len(remaining_bytes) + 1] + [0x55]  # Type: U (URL), no length needed
+                record_data = [prefix_found] + remaining_bytes
+            else:
+                # Text record
+                ndef_header = [0xD1, 0x01, len(text_bytes) + 1] + [0x54] + [0x00]  # Type: T (Text), UTF-8 encoding
+                record_data = text_bytes
+            
+            # Calculate total length including headers
+            total_length = len(ndef_header) + len(record_data)
+            
+            # TLV format: 0x03 (NDEF) + length + NDEF message + 0xFE (terminator)
+            ndef_data = [0x03, total_length] + ndef_header + record_data + [0xFE]
+            
+            self.write_status.config(text="Writing data...")
+            
+            # Debug output
+            debug_msg = f"Writing NDEF data: {self.toHexString(ndef_data)}"
+            self.write_status.config(text=debug_msg)
+            
+            # Initialize NDEF capability
+            self.write_status.config(text="Initializing NDEF capability...")
+            init_command = [0xFF, 0xD6, 0x00, 0x03, 0x04, 0xE1, 0x10, 0x06, 0x0F]  # CC bytes for NTAG213
+            response, sw1, sw2 = connection.transmit(init_command)
+            if sw1 != 0x90:
+                self.tag_queue.put(("Debug", f"NDEF initialization status: {sw1:02X} {sw2:02X}"))
+            
+            # Write data in chunks of 4 bytes (one page at a time)
+            self.write_status.config(text="Writing NDEF data...")
+            chunk_size = 4
+            for i in range(0, len(ndef_data), chunk_size):
+                chunk = ndef_data[i:i + chunk_size]
+                page = 4 + (i // chunk_size)  # Start from page 4
+                
+                # Pad the last chunk with zeros if needed
+                if len(chunk) < chunk_size:
+                    chunk = chunk + [0] * (chunk_size - len(chunk))
+                
+                write_command = [0xFF, 0xD6, 0x00, page, chunk_size] + chunk
+                response, sw1, sw2 = connection.transmit(write_command)
+                
+                if sw1 != 0x90:
+                    raise Exception(f"Failed to write page {page}. Status: {sw1:02X} {sw2:02X}")
+                
+                self.tag_queue.put(("Debug", f"Wrote page {page}: {self.toHexString(chunk)}"))
+
+            # Lock the tag if requested
+            if self.lock_var.get():
+                response, sw1, sw2 = connection.transmit(self.LOCK_CARD)
+                if sw1 != 0x90:
+                    raise Exception(f"Failed to lock tag. Status: {sw1:02X} {sw2:02X}")
+                self.write_status.config(text="Tag written and locked successfully")
+            else:
+                self.write_status.config(text="Tag written successfully")
+
+        except Exception as e:
+            self.write_status.config(text=f"Error: {str(e)}")
+        finally:
             try:
-                connection, connected = self.connect_with_retry()
-                if not connected:
-                    time.sleep(0.2)
-                    continue
-                    
-                # Get UID to check if it's a new tag
-                response, sw1, sw2 = connection.transmit(self.GET_UID)
-                if sw1 == 0x90:
-                    uid = self.toHexString(response)
-                    if uid != last_uid:  # Only write to new tags
-                        last_uid = uid
-                        self.write_status.config(
-                            text=f"Writing to tag {uid}...")
-                        
-                        # Write the data
-
-                        # Convert text to bytes
-                        text_bytes = list(text.encode('utf-8'))
-            
-                        # Create NDEF message for NTAG213
-                        # Check if it's a URL and determine prefix
-                        url_prefixes = {
-                            'http://www.': 0x00,
-                            'https://www.': 0x01,
-                            'http://': 0x02,
-                            'https://': 0x03,
-                            'tel:': 0x04,
-                            'mailto:': 0x05,
-                        }
-                        
-                        prefix_found = None
-                        remaining_text = text
-            
-                        if any(text.startswith(prefix) for prefix in url_prefixes.keys()):
-                            # This is a URL, find the matching prefix
-                            for prefix, code in url_prefixes.items():
-                                if text.startswith(prefix):
-                                    prefix_found = code
-                                    remaining_text = text[len(prefix):]
-                                    break
-                            
-                            # URL record with prefix
-                            remaining_bytes = list(remaining_text.encode('utf-8'))
-                            ndef_header = [0xD1, 0x01, len(remaining_bytes) + 1] + [0x55]  # Type: U (URL)
-                            record_data = [prefix_found] + remaining_bytes
-                        else:
-                            # Text record
-                            ndef_header = [0xD1, 0x01, len(text_bytes) + 1] + [0x54] + [0x00]  # Type: T (Text)
-                            record_data = text_bytes
-                        
-                        # Calculate total length including headers
-                        total_length = len(ndef_header) + len(record_data)
-                        
-                        # TLV format: 0x03 (NDEF) + length + NDEF message + 0xFE (terminator)
-                        ndef_data = [0x03, total_length] + ndef_header + record_data + [0xFE]
-                        
-                        # Initialize NDEF capability
-                        init_command = [0xFF, 0xD6, 0x00, 0x03, 0x04, 0xE1, 0x10, 0x06, 0x0F]
-                        response, sw1, sw2 = connection.transmit(init_command)
-                        if sw1 != 0x90:
-                            raise Exception(f"NDEF initialization failed: {sw1:02X} {sw2:02X}")
-                        
-                        # Write data in chunks of 4 bytes (one page at a time)
-                        chunk_size = 4
-                        for i in range(0, len(ndef_data), chunk_size):
-                            chunk = ndef_data[i:i + chunk_size]
-                            page = 4 + (i // chunk_size)  # Start from page 4
-                            
-                            # Pad the last chunk with zeros if needed
-                            if len(chunk) < chunk_size:
-                                chunk = chunk + [0] * (chunk_size - len(chunk))
-                            
-                            write_command = [0xFF, 0xD6, 0x00, page, chunk_size] + chunk
-                            response, sw1, sw2 = connection.transmit(write_command)
-                            
-                            if sw1 != 0x90:
-                                raise Exception(f"Failed to write page {page}")
-
-                        # Lock the tag if requested
-                        if self.lock_var.get():
-                            response, sw1, sw2 = connection.transmit(self.LOCK_CARD)
-                            if sw1 != 0x90:
-                                raise Exception("Failed to lock tag")
-                        
-                        tags_written += 1
-                        self.progress_var.set(
-                            f"Progress: {tags_written}/{quantity} tags written")
-                        
-                        if tags_written == quantity:
-                            self.write_status.config(
-                                text=f"Successfully wrote {quantity} tags")
-                            break
-                        else:
-                            self.write_status.config(
-                                text=f"Wrote tag {tags_written}/{quantity}. Please present next tag.")
-                
                 connection.disconnect()
-                
-            except Exception as e:
-                error_msg = str(e)
-                if not any(msg in error_msg.lower() for msg in [
-                    "card is not connected",
-                    "no smart card inserted",
-                    "card is unpowered"
-                ]):
-                    self.write_status.config(text=f"Error: {error_msg}")
-                    # Don't break on error, continue with next tag
-                
-            time.sleep(0.2)  # Delay between attempts
+            except:
+                pass
 
     def run(self):
         """Start the GUI application."""
