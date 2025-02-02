@@ -589,28 +589,39 @@ class NFCReaderGUI(QMainWindow):
                             if url.startswith(("http://", "https://")):
                                 # Try to open URL with different methods
                                 methods = [
-                                    (['google-chrome', '--new-tab', url], "Chrome (new tab)"),
-                                    (['google-chrome', url], "Chrome (existing window)"),
-                                    (['xdg-open', url], "System default browser")
+                                    (['xdg-open', url], "System default browser"),
+                                    (['firefox', url], "Firefox"),
+                                    (['google-chrome', url], "Chrome"),
+                                    (['chromium', url], "Chromium"),
+                                    (['sensible-browser', url], "Default browser (Debian/Ubuntu)"),
                                 ]
                                 
                                 success = False
                                 for cmd, method in methods:
                                     try:
-                                        self.log_signal.emit("Browser", f"Trying to open URL with {method}")
-                                        result = subprocess.run(cmd, capture_output=True, text=True)
+                                        self.log_signal.emit("Browser", f"Attempting to open URL with {method}")
+                                        # Use start_new_session=True to detach browser from this process
+                                        result = subprocess.run(
+                                            cmd, 
+                                            capture_output=True, 
+                                            text=True,
+                                            start_new_session=True
+                                        )
                                         if result.returncode == 0:
                                             self.log_signal.emit("Browser", f"Successfully opened URL with {method}")
                                             success = True
                                             break
                                         else:
                                             self.log_signal.emit("Debug", f"{method} failed: {result.stderr}")
+                                    except FileNotFoundError:
+                                        self.log_signal.emit("Debug", f"{method} not found, trying next method")
+                                        continue
                                     except Exception as e:
                                         self.log_signal.emit("Debug", f"{method} error: {str(e)}")
                                         continue
                                 
                                 if not success:
-                                    self.log_signal.emit("Error", "Failed to open URL with any method")
+                                    self.log_signal.emit("Error", "Failed to open URL with any available browser")
                         elif record_type_bytes == b'T' or (len(record_type) == 1 and record_type[0] == 0x54):  # Text Record
                             # First byte contains text info
                             text_info = data[offset]
