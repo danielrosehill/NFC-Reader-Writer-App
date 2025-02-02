@@ -1,6 +1,6 @@
 # NFC Reader/Writer for ACR1252U
 
-![alt text](screenshots/v3/2.png)
+![alt text](photos/tag-scanning.jpg)
 
 ![Made With Claude Sonnet 3.5](https://img.shields.io/badge/Made_With-Claude_Sonnet_3.5-blue)  
 ![Made With Cline IDE](https://img.shields.io/badge/Made_With-Cline_IDE-green)
