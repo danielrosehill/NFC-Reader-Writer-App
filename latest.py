@@ -86,22 +86,37 @@ class NFCReaderGUI(QMainWindow):
             QTabBar::tab {
                 background-color: #f0f0f0;
                 color: #000000;
-                padding: 8px 20px;
-                border: none;
+                padding: 10px 24px;
+                border: 1px solid #d0d0d0;
+                border-bottom: none;
                 margin-right: 2px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
             }
             QTabBar::tab:selected {
-                background-color: #e0e0e0;
+                background-color: #ffffff;
+                border-bottom: 2px solid #1976d2;
+            }
+            QTabBar::tab:hover:!selected {
+                background-color: #e8e8e8;
             }
             QLabel {
                 color: #000000;
+            }
+            QLabel#status_label {
+                color: #1976d2;
+                font-weight: bold;
+                padding: 8px;
+                background-color: #e3f2fd;
+                border-radius: 4px;
             }
             QPushButton {
                 background-color: #1976d2;
                 color: white;
                 border: none;
-                padding: 8px 16px;
+                padding: 10px 20px;
                 border-radius: 4px;
+                font-weight: 500;
             }
             QPushButton:hover {
                 background-color: #1e88e5;
@@ -198,7 +213,7 @@ class NFCReaderGUI(QMainWindow):
         status_frame = QFrame()
         status_layout = QHBoxLayout(status_frame)
         self.status_label = QLabel("Status: Waiting for reader...")
-        self.status_label.setStyleSheet("color: #ffd700;")  # Golden yellow for status
+        self.status_label.setObjectName("status_label")
         status_layout.addWidget(self.status_label)
         layout.addWidget(status_frame)
         
