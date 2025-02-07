@@ -167,6 +167,7 @@ class NFCReaderGUI(QMainWindow):
         
         # Create tab widget
         self.tab_widget = QTabWidget()
+        self.tab_widget.currentChanged.connect(self.on_tab_changed)
         layout.addWidget(self.tab_widget)
         
         # Create tabs
@@ -364,6 +365,11 @@ class NFCReaderGUI(QMainWindow):
                 break
         return all_data
 
+    def on_tab_changed(self, index):
+        """Handle tab change events."""
+        if index == 1 and self.scanning:  # Index 1 is Write Tags tab
+            self.toggle_scanning()  # Stop scanning when switching to write tab
+            
     def toggle_scanning(self):
         """Toggle the scanning process."""
         if not self.scanning:
