@@ -5,6 +5,7 @@ import threading
 import time
 import queue
 import subprocess
+import re
 from typing import Optional, List, Tuple
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLabel, QPushButton, QTabWidget, 
@@ -31,6 +32,7 @@ class NFCReaderGUI(QMainWindow):
         super().__init__()
         self.setWindowTitle("NFC Reader/Writer")
         self.setMinimumSize(900, 700)
+        self.last_tag_time = time.time()  # Track last tag detection time
         
         # Initialize reader
         try:
@@ -311,35 +313,26 @@ class NFCReaderGUI(QMainWindow):
         
         # App icon
         icon_label = QLabel()
-        # Get the correct path for bundled resources
-        import sys
-        import os
-        def resource_path(relative_path):
-            try:
-                # PyInstaller creates a temp folder and stores path in _MEIPASS
-                base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-                return os.path.join(base_path, relative_path)
-            except Exception:
-                return relative_path
-
-        # Try multiple icon paths
-        icon_paths = [
-            resource_path("launcher-icon/icon.png"),
-            resource_path("icon.png"),
-            "launcher-icon/icon.png",
-            "icon.png"
-        ]
-        
-        icon = None
-        for path in icon_paths:
-            if os.path.exists(path):
-                icon = QIcon(path)
-                if not icon.isNull():
-                    break
-        
-        if icon and not icon.isNull():
-            icon_pixmap = icon.pixmap(QSize(64, 64))
-        else:
+        # Load icon from remote URL
+        icon_url = "https://res.cloudinary.com/drrvnflqy/image/upload/v1738978376/acr_1252_jcozss.png"
+        try:
+            import urllib.request
+            from PyQt6.QtCore import QByteArray
+            
+            # Download image data
+            response = urllib.request.urlopen(icon_url)
+            image_data = response.read()
+            
+            # Create QPixmap from downloaded data
+            pixmap = QPixmap()
+            pixmap.loadFromData(QByteArray(image_data))
+            
+            # Scale to desired size
+            icon_pixmap = pixmap.scaled(QSize(64, 64), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            
+            if icon_pixmap.isNull():
+                raise Exception("Failed to load image")
+        except Exception as e:
             # Create a default icon if image cannot be loaded
             pixmap = QPixmap(64, 64)
             pixmap.fill(QColor("#1976d2"))  # Use theme color
@@ -635,6 +628,14 @@ class NFCReaderGUI(QMainWindow):
         last_uid = None
         
         while self.scanning:
+            # Check for timeout (30 seconds without new tags)
+            if time.time() - self.last_tag_time > 30:
+                self.scanning = False
+                self.status_signal.emit("Status: Scanning stopped due to inactivity (30s timeout)")
+                self.scan_button.setText("Start Scanning")
+                self.scan_button.setStyleSheet("")  # Reset to default style
+                self.log_signal.emit("System", "Scanning stopped - No tags detected for 30 seconds")
+                break
             try:
                 if self.reader:
                     connection, connected = self.connect_with_retry()
@@ -650,6 +651,7 @@ class NFCReaderGUI(QMainWindow):
                         # Only process if it's a new tag
                         if uid != last_uid:
                             last_uid = uid
+                            self.last_tag_time = time.time()  # Update last tag detection time
                             self.log_signal.emit("New tag detected", f"UID: {uid}")
                             self.update_tag_status(True)  # Update status when tag detected
                             
@@ -725,6 +727,11 @@ class NFCReaderGUI(QMainWindow):
                         break
                         
                     try:
+                        # Validate minimum record size
+                        if current_pos + 3 > len(data):
+                            self.log_signal.emit("Debug", "Record too short for NDEF header")
+                            break
+                            
                         # Parse NDEF record header
                         flags = data[current_pos]  # Record header flags
                         tnf = flags & 0x07  # Type Name Format (last 3 bits)
@@ -734,13 +741,35 @@ class NFCReaderGUI(QMainWindow):
                         sr_flag = (flags & 0x10) != 0   # SR (Short Record)
                         il_flag = (flags & 0x08) != 0   # IL (ID Length present)
                         
-                        # Validate TNF
+                        # Validate TNF and flags
                         if tnf not in [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]:  # Valid TNF values
                             self.log_signal.emit("Debug", f"Invalid TNF value: {tnf}")
                             break
                             
+                        if not is_first and current_pos == 0:  # First record must have MB flag
+                            self.log_signal.emit("Debug", "First record missing MB flag")
+                            break
+                            
+                        if cf_flag:  # We don't support chunked records
+                            self.log_signal.emit("Debug", "Chunked records are not supported")
+                            break
+                            
+                        if not sr_flag:  # We only support short records
+                            self.log_signal.emit("Debug", "Only short records are supported")
+                            break
+                            
+                        # Get record lengths
                         type_length = data[current_pos + 1]  # Length of the type field
                         payload_length = data[current_pos + 2]  # Length of the payload
+                        
+                        # Validate record size after getting lengths
+                        if type_length == 0:
+                            self.log_signal.emit("Debug", "Empty record type")
+                            break
+                            
+                        if payload_length == 0:
+                            self.log_signal.emit("Debug", "Empty payload")
+                            break
                         
                         # Validate we have enough data for the complete record
                         header_size = 3 + type_length  # Basic header + type field
@@ -819,13 +848,22 @@ class NFCReaderGUI(QMainWindow):
                                 0x21: "urn:epc:",
                                 0x22: "urn:nfc:",
                             }
+
+                            # Validate payload length before accessing
+                            if offset >= len(data) or offset + payload_length > len(data):
+                                self.log_signal.emit("Error", "Invalid payload length in NDEF record")
+                                return
                             
-                            # Get the URL content first
-                            url_content = bytes(content_bytes).decode('utf-8')
-                            self.log_signal.emit("Debug", f"URL content before prefix: {url_content}")
+                            try:
+                                # Get the URL content first
+                                url_content = bytes(content_bytes).decode('utf-8', errors='replace')
+                                self.log_signal.emit("Debug", f"URL content before prefix: {url_content}")
+                            except Exception as e:
+                                self.log_signal.emit("Error", f"Failed to decode URL content: {str(e)}")
+                                return
                             
-                            # Enhanced URL detection with more comprehensive patterns
-                            looks_like_web = any([
+                            # Enhanced URL detection with more comprehensive patterns and validation
+                            looks_like_web = url_content and any([
                                 # Standard URL patterns
                                 url_content.startswith(("www.", "http:", "https:")),
                                 
@@ -864,8 +902,10 @@ class NFCReaderGUI(QMainWindow):
                                 bool(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?(/.*)?$', url_content))
                             ])
                             
-                            # Determine URL prefix with enhanced logic
+                            # Determine URL prefix with enhanced logic and validation
                             original_prefix = url_prefixes.get(url_prefix_byte, "")
+                            if url_prefix_byte not in url_prefixes:
+                                self.log_signal.emit("Debug", f"Unknown URL prefix byte: 0x{url_prefix_byte:02X}")
                             
                             # Handle special cases
                             if looks_like_web:
@@ -893,8 +933,18 @@ class NFCReaderGUI(QMainWindow):
                                     self.log_signal.emit("Debug", f"Invalid prefix byte: 0x{url_prefix_byte:02X}, treating as text")
                                     return
                             
-                            # Construct full URL
+                            # Construct and validate full URL
+                            if not url_content:
+                                self.log_signal.emit("Error", "Empty URL content")
+                                return
+                                
                             url = prefix + url_content
+                            
+                            # Basic URL validation
+                            if not any(url.startswith(p) for p in ["http://", "https://", "tel:", "mailto:"]):
+                                self.log_signal.emit("Debug", f"Invalid URL format: {url}")
+                                if looks_like_web:
+                                    url = "https://" + url_content
                             
                             # Additional validation for tel: URLs
                             if url.startswith("tel:") and not url_content.replace("+","").replace("-","").replace(".","").isdigit():

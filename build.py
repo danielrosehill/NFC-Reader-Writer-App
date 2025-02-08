@@ -4,28 +4,44 @@ from datetime import datetime
 import PyInstaller.__main__
 import shutil
 
-# Create timestamped build directory
+# Create build directory
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 build_dir = os.path.join('build', f'build_{timestamp}')
 os.makedirs(build_dir, exist_ok=True)
 
+# Ensure source paths are absolute
+src_dir = os.path.abspath(os.path.dirname(__file__))
+image_path = os.path.join(src_dir, 'images', 'acr_1252.png')
+
 # Define PyInstaller arguments
 args = [
     'latest.py',
-    '--onefile',
-    '--clean',
+    '--onefile',  # Create a single executable
+    '--clean',    # Clean PyInstaller cache
+    '--name', 'nfc-rw',
+    # Bundle the image file with absolute path
+    '--add-data', f'{image_path}{os.pathsep}images',
+    # Temporary directories for build process
+    '--workpath', os.path.join(build_dir, 'temp'),
+    '--specpath', os.path.join(build_dir, 'temp'),
+    # Output directory
     '--distpath', build_dir,
-    '--workpath', os.path.join(build_dir, 'work'),
-    '--specpath', build_dir,
-    '--add-data', f'images/acr_1252.png{os.pathsep}images',
-    '--name', 'nfc-rw'
 ]
-
-# Ensure the image directory exists in the build directory
-os.makedirs(os.path.join(build_dir, 'images'), exist_ok=True)
-shutil.copy2('images/acr_1252.png', os.path.join(build_dir, 'images'))
 
 # Run PyInstaller
 PyInstaller.__main__.run(args)
 
-print(f'\nBuild completed successfully in: {build_dir}')
+# Clean up temporary directories
+temp_dir = os.path.join(build_dir, 'temp')
+if os.path.exists(temp_dir):
+    shutil.rmtree(temp_dir)
+
+# Move executable to final location
+executable = 'nfc-rw' + ('.exe' if sys.platform == 'win32' else '')
+executable_path = os.path.join(build_dir, executable)
+
+if os.path.exists(executable_path):
+    print(f'\nBuild completed successfully!')
+    print(f'Executable created at: {executable_path}')
+else:
+    print('\nError: Build failed to create executable')

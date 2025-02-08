@@ -1,0 +1,1 @@
+Remote URL for NFC icon
