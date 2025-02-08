@@ -32,7 +32,6 @@ class NFCReaderGUI(QMainWindow):
         super().__init__()
         self.setWindowTitle("NFC Reader/Writer")
         self.setMinimumSize(900, 700)
-        self.last_tag_time = time.time()  # Track last tag detection time
         
         # Initialize reader
         try:
@@ -628,14 +627,6 @@ class NFCReaderGUI(QMainWindow):
         last_uid = None
         
         while self.scanning:
-            # Check for timeout (30 seconds without new tags)
-            if time.time() - self.last_tag_time > 30:
-                self.scanning = False
-                self.status_signal.emit("Status: Scanning stopped due to inactivity (30s timeout)")
-                self.scan_button.setText("Start Scanning")
-                self.scan_button.setStyleSheet("")  # Reset to default style
-                self.log_signal.emit("System", "Scanning stopped - No tags detected for 30 seconds")
-                break
             try:
                 if self.reader:
                     connection, connected = self.connect_with_retry()
@@ -651,7 +642,6 @@ class NFCReaderGUI(QMainWindow):
                         # Only process if it's a new tag
                         if uid != last_uid:
                             last_uid = uid
-                            self.last_tag_time = time.time()  # Update last tag detection time
                             self.log_signal.emit("New tag detected", f"UID: {uid}")
                             self.update_tag_status(True)  # Update status when tag detected
                             
