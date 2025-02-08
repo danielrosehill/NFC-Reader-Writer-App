@@ -11,7 +11,8 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QTextEdit, QLineEdit, QSpinBox, QCheckBox, 
                             QGroupBox, QFrame, QMessageBox)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QFont, QPalette, QColor, QIcon
+from PyQt6.QtGui import QFont, QPalette, QColor, QIcon, QPixmap
+from PyQt6.QtCore import QSize
 
 class NFCReaderGUI(QMainWindow):
     # APDU Commands
@@ -80,23 +81,33 @@ class NFCReaderGUI(QMainWindow):
     def apply_light_theme(self):
         """Apply light theme to the application."""
         self.setStyleSheet("""
-            QMainWindow {
+            /* Global styles */
+            QMainWindow, QWidget {
                 background-color: #ffffff;
                 color: #000000;
+            }
+            
+            /* Add spacing between sections */
+            QGroupBox {
+                margin-top: 15px;
+                margin-bottom: 5px;
             }
             QTabWidget::pane {
                 border: 1px solid #d0d0d0;
                 background-color: #ffffff;
+                border-radius: 4px;
+                margin-top: -1px;
             }
             QTabBar::tab {
                 background-color: #f0f0f0;
                 color: #000000;
-                padding: 10px 24px;
+                padding: 12px 28px;
                 border: 1px solid #d0d0d0;
                 border-bottom: none;
                 margin-right: 2px;
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
+                font-weight: 500;
             }
             QTabBar::tab:selected {
                 background-color: #ffffff;
@@ -111,17 +122,24 @@ class NFCReaderGUI(QMainWindow):
             QLabel#status_label {
                 color: #1976d2;
                 font-weight: bold;
-                padding: 8px;
+                padding: 12px;
                 background-color: #e3f2fd;
                 border-radius: 4px;
+                margin: 5px 0;
             }
             QPushButton {
                 background-color: #1976d2;
                 color: white;
                 border: none;
-                padding: 10px 20px;
+                padding: 12px 24px;
                 border-radius: 4px;
                 font-weight: 500;
+                min-width: 120px;
+            }
+            
+            QPushButton:disabled {
+                background-color: #bdbdbd;
+                color: #757575;
             }
             QPushButton:hover {
                 background-color: #1e88e5;
@@ -134,14 +152,20 @@ class NFCReaderGUI(QMainWindow):
                 color: #000000;
                 border: 1px solid #d0d0d0;
                 border-radius: 4px;
-                padding: 4px;
+                padding: 8px;
+                selection-background-color: #bbdefb;
             }
             QLineEdit {
                 background-color: #ffffff;
                 color: #000000;
                 border: 1px solid #d0d0d0;
                 border-radius: 4px;
-                padding: 6px;
+                padding: 8px;
+                selection-background-color: #bbdefb;
+            }
+            
+            QLineEdit:focus {
+                border: 2px solid #1976d2;
             }
             QSpinBox {
                 background-color: #ffffff;
@@ -153,9 +177,10 @@ class NFCReaderGUI(QMainWindow):
             QGroupBox {
                 border: 1px solid #d0d0d0;
                 border-radius: 4px;
-                margin-top: 1em;
-                padding-top: 1em;
+                margin-top: 1.2em;
+                padding-top: 1.2em;
                 color: #000000;
+                background-color: #fafafa;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
@@ -176,6 +201,7 @@ class NFCReaderGUI(QMainWindow):
             QCheckBox::indicator:checked {
                 border: 2px solid #1976d2;
                 background-color: #1976d2;
+                image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBmaWxsPSIjZmZmIiBkPSJNNi4yIDEwLjhsLTMtMy0xLjQgMS40IDQuNCA0LjQgOC44LTguOC0xLjQtMS40eiIvPjwvc3ZnPg==);
             }
         """)
 
@@ -279,18 +305,87 @@ class NFCReaderGUI(QMainWindow):
         """Setup the about tab interface."""
         layout = QVBoxLayout(self.about_tab)
         
+        # Header section with app info
+        header_group = QGroupBox("About NFC Reader/Writer")
+        header_layout = QVBoxLayout(header_group)
+        
+        # App icon
+        icon_label = QLabel()
+        # Get the correct path for bundled resources
+        import sys
+        import os
+        def resource_path(relative_path):
+            try:
+                # PyInstaller creates a temp folder and stores path in _MEIPASS
+                base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+                return os.path.join(base_path, relative_path)
+            except Exception:
+                return relative_path
+
+        # Try multiple icon paths
+        icon_paths = [
+            resource_path("launcher-icon/icon.png"),
+            resource_path("icon.png"),
+            "launcher-icon/icon.png",
+            "icon.png"
+        ]
+        
+        icon = None
+        for path in icon_paths:
+            if os.path.exists(path):
+                icon = QIcon(path)
+                if not icon.isNull():
+                    break
+        
+        if icon and not icon.isNull():
+            icon_pixmap = icon.pixmap(QSize(64, 64))
+        else:
+            # Create a default icon if image cannot be loaded
+            pixmap = QPixmap(64, 64)
+            pixmap.fill(QColor("#1976d2"))  # Use theme color
+            icon_pixmap = pixmap
+        icon_label.setPixmap(icon_pixmap)
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        header_layout.addWidget(icon_label)
+        
+        # Version info
+        version_label = QLabel("Version 1.0.0")
+        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        version_label.setStyleSheet("font-weight: bold; color: #1976d2; margin: 10px 0;")
+        header_layout.addWidget(version_label)
+        
+        # Description
+        desc_label = QLabel(
+            "A user-friendly application for reading and writing NFC tags using the ACR1252U reader. "
+            "Perfect for managing URL tags, text records, and batch operations."
+        )
+        desc_label.setWordWrap(True)
+        desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        desc_label.setStyleSheet("margin: 10px 0;")
+        header_layout.addWidget(desc_label)
+        
+        layout.addWidget(header_group)
+        
         # Attribution section
         attribution_group = QGroupBox("Attribution")
         attribution_layout = QVBoxLayout(attribution_group)
         
         # Developer info with link
-        dev_label = QLabel("Developed by <a href='https://danielrosehill.com'>Daniel Rosehill</a> and Claude 3.5 Sonnet")
+        dev_label = QLabel(
+            "Developed by <a style='color: #1976d2;' href='https://danielrosehill.com'>Daniel Rosehill</a> "
+            "and Claude 3.5 Sonnet"
+        )
         dev_label.setOpenExternalLinks(True)
+        dev_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         attribution_layout.addWidget(dev_label)
         
         # GitHub repo link
-        repo_label = QLabel("Source code: <a href='https://github.com/danielrosehill/NFC-Reader-Writer-App/'>GitHub Repository</a>")
+        repo_label = QLabel(
+            "Source code: <a style='color: #1976d2;' href='https://github.com/danielrosehill/NFC-Reader-Writer-App/'>"
+            "GitHub Repository</a>"
+        )
         repo_label.setOpenExternalLinks(True)
+        repo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         attribution_layout.addWidget(repo_label)
         
         layout.addWidget(attribution_group)
@@ -301,35 +396,70 @@ class NFCReaderGUI(QMainWindow):
         
         manual_text = QTextEdit()
         manual_text.setReadOnly(True)
+        manual_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #fafafa;
+                border: none;
+                padding: 15px;
+            }
+        """)
         manual_text.setHtml("""
+            <style>
+                h3 { color: #1976d2; margin-bottom: 15px; }
+                h4 { color: #2196f3; margin-top: 20px; margin-bottom: 10px; }
+                p { line-height: 1.6; margin-bottom: 15px; }
+                ol, ul { margin-left: 20px; line-height: 1.6; }
+                li { margin-bottom: 8px; }
+                .tip { 
+                    background-color: #e3f2fd; 
+                    padding: 10px 15px; 
+                    border-radius: 4px;
+                    margin: 10px 0;
+                }
+                .feature {
+                    color: #1976d2;
+                    font-weight: bold;
+                }
+            </style>
+            
             <h3>Quick Start Guide</h3>
-            <p>This application allows you to read and write NFC tags using the ACR1252U reader.</p>
+            <p>Welcome to the NFC Reader/Writer application! This tool helps you interact with NFC tags using the ACR1252U reader.</p>
             
             <h4>Reading Tags</h4>
             <ol>
-                <li>Connect your ACR1252U reader</li>
-                <li>Go to the "Read Tags" tab</li>
-                <li>Click "Start Scanning"</li>
+                <li><span class='feature'>Connect</span> your ACR1252U reader to your computer</li>
+                <li>Navigate to the <span class='feature'>"Read Tags"</span> tab</li>
+                <li>Click the <span class='feature'>"Start Scanning"</span> button</li>
                 <li>Present an NFC tag to the reader</li>
-                <li>The detected URL or text will be displayed</li>
+                <li>The detected URL or text will be displayed automatically</li>
             </ol>
             
             <h4>Writing Tags</h4>
             <ol>
-                <li>Go to the "Write Tags" tab</li>
+                <li>Go to the <span class='feature'>"Write Tags"</span> tab</li>
                 <li>Enter the URL or text you want to write</li>
-                <li>Set the number of tags to write (for batch writing)</li>
+                <li>Set the number of tags for batch writing (optional)</li>
                 <li>Choose whether to lock tags after writing</li>
-                <li>Click "Write to Tag" and follow the prompts</li>
+                <li>Click <span class='feature'>"Write to Tag"</span> and follow the prompts</li>
             </ol>
             
-            <h4>Tips</h4>
-            <ul>
-                <li>The indicator light shows tag presence and status</li>
-                <li>Orange = No tag present</li>
-                <li>Green = Tag detected</li>
-                <li>Green with checkmark = Tag locked</li>
-            </ul>
+            <h4>Copying Tags</h4>
+            <ol>
+                <li>Navigate to the <span class='feature'>"Copy Tags"</span> tab</li>
+                <li>Click <span class='feature'>"Read & Store Tag"</span> with your source tag</li>
+                <li>Present a new tag and click <span class='feature'>"Copy to New Tag"</span></li>
+                <li>Repeat for additional copies (up to 10 copies allowed)</li>
+            </ol>
+            
+            <h4>Status Indicators</h4>
+            <div class='tip'>
+                <p>The colored indicator shows the current tag status:</p>
+                <ul>
+                    <li>🟧 <span class='feature'>Orange</span> = No tag present</li>
+                    <li>🟩 <span class='feature'>Green</span> = Tag detected</li>
+                    <li>✅ <span class='feature'>Green with checkmark</span> = Tag locked</li>
+                </ul>
+            </div>
         """)
         manual_layout.addWidget(manual_text)
         
