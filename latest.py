@@ -684,18 +684,30 @@ class NFCReaderGUI(QMainWindow):
                 
             # Check for TLV structure
             current_pos = 0
-            while current_pos < len(data):
+            while current_pos < len(data) - 1:  # Ensure we can read length byte
                 tlv_type = data[current_pos]
-                if tlv_type == 0xFE:  # Terminator TLV
-                    break
-                    
-                # Get length for TLV types that have a length field
-                if tlv_type in [0x01, 0x02, 0x03]:
-                    length = data[current_pos + 1]
-                    current_pos += 2  # Skip type and length bytes
-                else:
+                
+                # Skip null bytes that might appear before valid TLV blocks
+                if tlv_type == 0x00:
                     current_pos += 1
                     continue
+                    
+                if tlv_type == 0xFE:  # Terminator TLV
+                    break
+                
+                # Validate we can read the length byte
+                if current_pos + 1 >= len(data):
+                    self.log_signal.emit("Debug", "Incomplete TLV structure - missing length byte")
+                    break
+                
+                # Get length for TLV types
+                length = data[current_pos + 1]
+                current_pos += 2  # Skip type and length bytes
+                
+                # Validate we have enough data for the TLV value
+                if current_pos + length > len(data):
+                    self.log_signal.emit("Debug", f"Incomplete TLV value - expected {length} bytes but only {len(data) - current_pos} available")
+                    break
                 
                 # Process NDEF message (type 0x03) or Capability Container (type 0x01)
                 if tlv_type == 0x03 or (tlv_type == 0x01 and length > 0):  # NDEF TLV or CC
@@ -706,6 +718,11 @@ class NFCReaderGUI(QMainWindow):
                     if tlv_type == 0x01:
                         current_pos += length
                         continue
+                    
+                    # Ensure we have enough data for the NDEF record header
+                    if current_pos + 3 > len(data):  # Minimum NDEF header size
+                        self.log_signal.emit("Debug", "Incomplete NDEF record header")
+                        break
                         
                     try:
                         # Parse NDEF record header
@@ -717,8 +734,27 @@ class NFCReaderGUI(QMainWindow):
                         sr_flag = (flags & 0x10) != 0   # SR (Short Record)
                         il_flag = (flags & 0x08) != 0   # IL (ID Length present)
                         
+                        # Validate TNF
+                        if tnf not in [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]:  # Valid TNF values
+                            self.log_signal.emit("Debug", f"Invalid TNF value: {tnf}")
+                            break
+                            
                         type_length = data[current_pos + 1]  # Length of the type field
                         payload_length = data[current_pos + 2]  # Length of the payload
+                        
+                        # Validate we have enough data for the complete record
+                        header_size = 3 + type_length  # Basic header + type field
+                        if il_flag:
+                            if current_pos + header_size >= len(data):
+                                self.log_signal.emit("Debug", "Missing ID length field")
+                                break
+                            id_length = data[current_pos + header_size]
+                            header_size += 1 + id_length
+                            
+                        if current_pos + header_size + payload_length > len(data):
+                            self.log_signal.emit("Debug", "Incomplete NDEF record payload")
+                            break
+                            
                         record_type = data[current_pos + 3:current_pos + 3 + type_length]  # Type field
                         
                         self.log_signal.emit("Debug", f"Record flags: MB={is_first}, ME={is_last}, CF={cf_flag}, SR={sr_flag}, IL={il_flag}, TNF={tnf}")
@@ -788,43 +824,74 @@ class NFCReaderGUI(QMainWindow):
                             url_content = bytes(content_bytes).decode('utf-8')
                             self.log_signal.emit("Debug", f"URL content before prefix: {url_content}")
                             
-                            # Detect if the content looks like a web URL despite the prefix
-                            looks_like_web = any(
-                                url_content.startswith(domain_part) for domain_part in [
-                                    "www.", 
-                                    "http", # Will match http:// or https://
-                                    # Common domain patterns
+                            # Enhanced URL detection with more comprehensive patterns
+                            looks_like_web = any([
+                                # Standard URL patterns
+                                url_content.startswith(("www.", "http:", "https:")),
+                                
+                                # Common domain patterns
+                                any(url_content.startswith(domain) for domain in [
                                     "github.com",
                                     "gitlab.com",
                                     "bitbucket.org",
                                     "homebox.",
                                     "box.",
                                     "docs.",
-                                    "drive."
-                                ]
-                            ) or any(
-                                "." + tld in url_content.lower() for tld in [
-                                    "com",
-                                    "org",
-                                    "net",
-                                    "edu",
-                                    "gov",
-                                    "io",
-                                    "app"
-                                ]
-                            )
+                                    "drive.",
+                                    "cloud.",
+                                    "app.",
+                                    "api.",
+                                    "portal.",
+                                    "dashboard.",
+                                    "login.",
+                                    "auth.",
+                                    "account."
+                                ]),
+                                
+                                # TLD detection
+                                any("." + tld in url_content.lower() for tld in [
+                                    # Generic TLDs
+                                    "com", "org", "net", "edu", "gov", "mil", "int",
+                                    # Common country TLDs
+                                    "uk", "us", "eu", "ca", "au", "de", "fr", "jp",
+                                    # Tech TLDs
+                                    "io", "app", "dev", "tech", "cloud", "ai",
+                                    # Business TLDs
+                                    "biz", "info", "co", "me", "pro"
+                                ]),
+                                
+                                # IP address pattern (basic check)
+                                bool(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?(/.*)?$', url_content))
+                            ])
                             
-                            # Get prefix from byte, but override if content looks like a web URL
+                            # Determine URL prefix with enhanced logic
                             original_prefix = url_prefixes.get(url_prefix_byte, "")
-                            if looks_like_web and original_prefix in ["tel:", "mailto:"]:
-                                self.log_signal.emit("Debug", f"Overriding {original_prefix} prefix with http:// for web-like URL")
-                                prefix = "http://"
-                            else:
-                                prefix = original_prefix
-                                if prefix:
-                                    self.log_signal.emit("Debug", f"Using original prefix: {prefix}")
+                            
+                            # Handle special cases
+                            if looks_like_web:
+                                if original_prefix in ["tel:", "mailto:", ""]:
+                                    # Override non-web prefixes for web-like content
+                                    if url_content.startswith(("https:", "http:")):
+                                        # Keep explicit protocol if present
+                                        prefix = ""
+                                    elif url_content.startswith("www."):
+                                        prefix = "http://"  # Default to http:// for www
+                                    else:
+                                        prefix = "https://"  # Default to https:// for modern web
+                                    self.log_signal.emit("Debug", f"Using web prefix {prefix} for web-like URL")
                                 else:
-                                    self.log_signal.emit("Debug", f"Unknown URL prefix byte: 0x{url_prefix_byte:02X}")
+                                    # Keep valid web prefix
+                                    prefix = original_prefix
+                                    self.log_signal.emit("Debug", f"Using original web prefix: {prefix}")
+                            else:
+                                if original_prefix:
+                                    # Keep valid non-web prefix
+                                    prefix = original_prefix
+                                    self.log_signal.emit("Debug", f"Using original non-web prefix: {prefix}")
+                                else:
+                                    # Default to text record if no valid prefix
+                                    self.log_signal.emit("Debug", f"Invalid prefix byte: 0x{url_prefix_byte:02X}, treating as text")
+                                    return
                             
                             # Construct full URL
                             url = prefix + url_content
@@ -838,7 +905,24 @@ class NFCReaderGUI(QMainWindow):
                             self.log_signal.emit("URL Detected", f"Complete URL: {url}")
                             self.url_signal.emit(url)
                             
-                            # Only try to open web URLs (not tel: or mailto:)
+                            # Handle special URL types
+                            if url.startswith("tel:"):
+                                # Validate phone numbers (allow +, -, ., and digits)
+                                if not url_content.replace("+","").replace("-","").replace(".","").isdigit():
+                                    self.log_signal.emit("Debug", "Invalid tel: URL format, converting to http://")
+                                    url = "http://" + url_content
+                                else:
+                                    self.log_signal.emit("URL Detected", f"Valid tel: URL: {url}")
+                            elif url.startswith("mailto:"):
+                                # Basic email format validation
+                                if not re.match(r'^[^@]+@[^@]+\.[^@]+$', url_content):
+                                    self.log_signal.emit("Debug", "Invalid mailto: URL format, converting to http://")
+                                    url = "http://" + url_content
+                                else:
+                                    self.log_signal.emit("URL Detected", f"Valid mailto: URL: {url}")
+                            
+                            # Update URL label and try to open web URLs
+                            self.url_signal.emit(url)
                             if url.startswith(("http://", "https://")):
                                 # Try to open URL with different methods
                                 methods = [
