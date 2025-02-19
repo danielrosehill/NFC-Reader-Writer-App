@@ -272,6 +272,16 @@ class NFCReaderGUI(QMainWindow):
         url_layout = QHBoxLayout(url_group)
         self.url_label = QLabel("")
         self.url_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.url_label.setStyleSheet("""
+            QLabel {
+                font-family: 'Segoe UI';
+                font-size: 12px;
+                color: #1976D2;
+                padding: 8px;
+                background-color: #E3F2FD;
+                border-radius: 4px;
+            }
+        """)
         self.copy_url_button = QPushButton()
         self.copy_url_button.setIcon(QIcon.fromTheme("edit-copy"))
         self.copy_url_button.setToolTip("Copy URL to clipboard")
@@ -285,10 +295,17 @@ class NFCReaderGUI(QMainWindow):
         log_group = QGroupBox("Log")
         log_layout = QVBoxLayout(log_group)
         
-        # Log text area
+        # Log text area with enhanced styling
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
-        self.log_text.setFont(QFont("Consolas", 10))
+        self.log_text.setFont(QFont("Segoe UI", 10))
+        self.log_text.setStyleSheet("""
+            QTextEdit {
+                line-height: 1.6;
+                padding: 10px;
+                background-color: #FFFFFF;
+            }
+        """)
         log_layout.addWidget(self.log_text)
         
         # Button container
@@ -1132,10 +1149,31 @@ class NFCReaderGUI(QMainWindow):
         self.status_label.setText(text)
 
     @pyqtSlot(str, str)
+    def _get_title_color(self, title):
+        """Get color for log message title."""
+        colors = {
+            "Error": "#D32F2F",
+            "Debug": "#1976D2",
+            "System": "#388E3C",
+            "URL Detected": "#7B1FA2",
+            "Browser": "#F57C00",
+            "Text Record": "#00796B"
+        }
+        return colors.get(title, "#000000")
+
     def append_log(self, title, message):
-        """Append message to log."""
+        """Append formatted message to log."""
         timestamp = time.strftime("%H:%M:%S", time.localtime())
-        self.log_text.append(f"[{timestamp}] [{title}] {message}")
+        
+        # Format based on message type
+        if title in ["Debug", "Error", "System"]:
+            # Technical messages in monospace
+            formatted_msg = f'<span style="color: #666666">[{timestamp}]</span> <span style="font-family: Consolas; color: {self._get_title_color(title)}">[{title}]</span> <span style="font-family: Consolas">{message}</span>'
+        else:
+            # User-friendly messages in regular font
+            formatted_msg = f'<span style="color: #666666">[{timestamp}]</span> <span style="color: {self._get_title_color(title)}">[{title}]</span> {message}'
+            
+        self.log_text.append(formatted_msg)
         self.log_text.verticalScrollBar().setValue(
             self.log_text.verticalScrollBar().maximum()
         )
