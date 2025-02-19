@@ -511,13 +511,9 @@ class NFCReaderGUI(QMainWindow):
                 font-family: 'Segoe UI';
                 font-size: 16px;
                 padding: 8px 12px;    /* Vertical and horizontal padding */
-                border: 2px solid #1976d2;
-                border-radius: 8px;
+                border: none;
                 margin-bottom: 25px;  /* Keep the spacing below */
                 margin-top: 10px;     /* Keep the spacing above */
-            }
-            QLineEdit:focus {
-                border-color: #1e88e5;
             }
         """)
         
