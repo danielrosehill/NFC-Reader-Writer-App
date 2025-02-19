@@ -578,6 +578,9 @@ class NFCReaderGUI(QMainWindow):
             QPushButton:pressed {
                 background-color: #1565c0;
             }
+            QPushButton QIcon {
+                color: white;
+            }
         """)
         
         # Clear button with better styling
@@ -601,6 +604,9 @@ class NFCReaderGUI(QMainWindow):
             }
             QPushButton:pressed {
                 background-color: #c62828;
+            }
+            QPushButton QIcon {
+                color: white;
             }
         """)
         
