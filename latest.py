@@ -575,6 +575,7 @@ class NFCReaderGUI(QMainWindow):
         
         input_layout.addWidget(input_label)
         input_layout.addWidget(input_container)
+        input_layout.addSpacing(20)  # Add spacing below input field
         
         # Batch writing section
         batch_widget = QWidget()
