@@ -495,7 +495,7 @@ class NFCReaderGUI(QMainWindow):
         
         # URL/Text input
         input_label = QLabel("Enter URL or message to write to tag:")
-        input_label.setFont(QFont("", 10, QFont.Weight.Bold))
+        input_label.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
         self.write_entry = QLineEdit()
         input_layout.addWidget(input_label)
         input_layout.addWidget(self.write_entry)
