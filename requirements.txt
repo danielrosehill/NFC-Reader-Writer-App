@@ -1,3 +1,5 @@
-PyQt6
-pyscard
-pyinstaller
+PyQt6>=6.4.0
+pyscard>=2.0.0
+pyinstaller>=5.7.0
+urllib3>=2.0.0
+pillow>=9.3.0
