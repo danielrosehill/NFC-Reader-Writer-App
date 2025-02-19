@@ -36,6 +36,7 @@ class NFCReaderGUI(QMainWindow):
         self.setWindowTitle("NFC Reader/Writer")
         self.setMinimumSize(1000, 800)
         self.setWindowIcon(QIcon('launcher-icon/acr_1252.ico'))
+        self.debug_mode = False  # Debug mode disabled by default
         
         # Initialize reader
         try:
@@ -318,9 +319,22 @@ class NFCReaderGUI(QMainWindow):
         url_layout.addWidget(self.copy_url_button)
         layout.addWidget(url_group)
         
-        # Log group
+        # Log group with debug toggle
         log_group = QGroupBox("Log")
         log_layout = QVBoxLayout(log_group)
+        
+        # Add debug mode toggle
+        debug_container = QWidget()
+        debug_layout = QHBoxLayout(debug_container)
+        debug_layout.setContentsMargins(0, 0, 0, 10)
+        
+        self.debug_checkbox = QCheckBox("Debug Mode")
+        self.debug_checkbox.setChecked(False)
+        self.debug_checkbox.stateChanged.connect(self.toggle_debug_mode)
+        debug_layout.addWidget(self.debug_checkbox)
+        debug_layout.addStretch()
+        
+        log_layout.addWidget(debug_container)
         
         # Log text area with enhanced styling
         self.log_text = QTextEdit()
@@ -1221,18 +1235,28 @@ class NFCReaderGUI(QMainWindow):
         }
         return colors.get(title, "#000000")
 
+    def toggle_debug_mode(self, state):
+        """Toggle debug mode on/off."""
+        self.debug_mode = bool(state)
+        if not self.debug_mode:
+            self.log_text.clear()
+            self.log_signal.emit("System", "Debug mode disabled")
+        else:
+            self.log_signal.emit("System", "Debug mode enabled")
+
     def append_log(self, title, message):
         """Append formatted message to log."""
-        timestamp = time.strftime("%H:%M:%S", time.localtime())
-        
-        # Format based on message type
-        if title in ["Debug", "Error", "System"]:
-            # All messages in Segoe UI
-            formatted_msg = f'<div style="font-family: Segoe UI"><span style="color: #666666">[{timestamp}]</span> <span style="color: {self._get_title_color(title)}">[{title}]</span> {message}</div>'
-        else:
-            # All messages in Segoe UI
-            formatted_msg = f'<div style="font-family: Segoe UI"><span style="color: #666666">[{timestamp}]</span> <span style="color: {self._get_title_color(title)}">[{title}]</span> {message}</div>'
+        # Only show debug messages if debug mode is enabled
+        if title == "Debug" and not self.debug_mode:
+            return
             
+        # Only show important messages by default
+        if not self.debug_mode and title not in ["Error", "URL Detected", "System", "Text Record"]:
+            return
+            
+        timestamp = time.strftime("%H:%M:%S", time.localtime())
+        formatted_msg = f'<div style="font-family: Segoe UI"><span style="color: #666666">[{timestamp}]</span> <span style="color: {self._get_title_color(title)}">[{title}]</span> {message}</div>'
+        
         self.log_text.append(formatted_msg)
         self.log_text.verticalScrollBar().setValue(
             self.log_text.verticalScrollBar().maximum()
