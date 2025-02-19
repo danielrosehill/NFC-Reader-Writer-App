@@ -1060,22 +1060,14 @@ class NFCReaderGUI(QMainWindow):
                             # Update URL label and try to open web URLs
                             self.url_signal.emit(url)
                             if url.startswith(("http://", "https://")):
-                                # Validate URL first
-                                try:
-                                    # Create SSL context that ignores certificate errors
-                                    ctx = ssl.create_default_context()
-                                    ctx.check_hostname = False
-                                    ctx.verify_mode = ssl.CERT_NONE
+                                # Try to open URL directly without validation for local addresses
+                                if re.match(r'^https?://(?:localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', url):
+                                    self.log_signal.emit("Debug", "Local URL detected - skipping validation")
                                     
-                                    # Test URL accessibility
-                                    req = urllib.request.Request(
-                                        url,
-                                        headers={'User-Agent': 'Mozilla/5.0'}
-                                    )
-                                    urllib.request.urlopen(req, context=ctx, timeout=5)
-                                    
-                                    # If URL is accessible, try to open in browser
+                                    # Try to open in browser
                                     methods = [
+                                        (['xdg-open', '--new-window', url], "System default browser"),
+                                        (['firefox', '--new-window', url], "Firefox"),
                                         (['xdg-open', url], "System default browser"),
                                         (['firefox', '--no-remote', url], "Firefox"),
                                         (['google-chrome', '--no-sandbox', url], "Chrome"),
@@ -1109,13 +1101,8 @@ class NFCReaderGUI(QMainWindow):
                                     if not success:
                                         self.log_signal.emit("Error", "Failed to open URL with any available browser")
                                 
-                                except urllib.error.URLError as e:
-                                    if isinstance(e.reason, ssl.SSLError):
-                                        self.log_signal.emit("Error", f"SSL Error: {str(e.reason)}. URL may be using an invalid certificate.")
-                                    else:
-                                        self.log_signal.emit("Error", f"Failed to access URL: {str(e.reason)}")
                                 except Exception as e:
-                                    self.log_signal.emit("Error", f"URL validation failed: {str(e)}")
+                                    self.log_signal.emit("Debug", f"Browser open error: {str(e)}")
                         elif record_type_bytes == b'T' or (len(record_type) == 1 and record_type[0] == 0x54):  # Text Record
                             # First byte contains text info
                             text_info = data[offset]
