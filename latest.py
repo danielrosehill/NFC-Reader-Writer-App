@@ -503,21 +503,68 @@ class NFCReaderGUI(QMainWindow):
         input_container_layout.setContentsMargins(0, 0, 0, 0)
         
         self.write_entry = QLineEdit()
-        self.write_entry.setMinimumWidth(400)  # Make input field wider
+        self.write_entry.setMinimumWidth(400)
+        self.write_entry.setMinimumHeight(40)  # Make field taller
+        self.write_entry.setStyleSheet("""
+            QLineEdit {
+                font-family: 'Segoe UI';
+                font-size: 14px;
+                padding: 8px;
+                border: 2px solid #1976d2;
+                border-radius: 6px;
+            }
+            QLineEdit:focus {
+                border-color: #1e88e5;
+            }
+        """)
         
-        # Paste button
-        paste_button = QPushButton()
+        # Paste button with better styling
+        paste_button = QPushButton("Paste")
         paste_button.setIcon(QIcon.fromTheme("edit-paste"))
         paste_button.setToolTip("Paste from clipboard")
         paste_button.clicked.connect(self.paste_to_write_entry)
-        paste_button.setFixedSize(30, 30)
+        paste_button.setFixedSize(80, 40)  # Wider button
+        paste_button.setStyleSheet("""
+            QPushButton {
+                background-color: #1976d2;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px;
+                font-family: 'Segoe UI';
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #1e88e5;
+            }
+            QPushButton:pressed {
+                background-color: #1565c0;
+            }
+        """)
         
-        # Clear button
-        clear_button = QPushButton()
+        # Clear button with better styling
+        clear_button = QPushButton("Clear")
         clear_button.setIcon(QIcon.fromTheme("edit-clear"))
         clear_button.setToolTip("Clear input")
         clear_button.clicked.connect(self.clear_write_entry)
-        clear_button.setFixedSize(30, 30)
+        clear_button.setFixedSize(80, 40)  # Wider button
+        clear_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f44336;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px;
+                font-family: 'Segoe UI';
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #e53935;
+            }
+            QPushButton:pressed {
+                background-color: #c62828;
+            }
+        """)
         
         input_container_layout.addWidget(self.write_entry)
         input_container_layout.addWidget(paste_button)
