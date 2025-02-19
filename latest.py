@@ -235,7 +235,7 @@ class NFCReaderGUI(QMainWindow):
         self.write_tab = QWidget()
         self.about_tab = QWidget()
         self.tab_widget.addTab(self.read_tab, "Read Tags")
-        self.tab_widget.addTab(self.write_tab, "Write Tags") 
+        self.tab_widget.addTab(self.write_tab, "Write Tags")
         self.tab_widget.addTab(self.about_tab, "About")
         
         # Setup read interface
@@ -528,6 +528,10 @@ class NFCReaderGUI(QMainWindow):
         self.write_button = QPushButton("Write Content to Tag")
         self.write_button.clicked.connect(self.write_tag)
         self.write_button.setFixedWidth(200)
+        self.write_button.setEnabled(False)  # Disabled by default
+        
+        # Connect text changed signal to enable/disable button
+        self.write_entry.textChanged.connect(self.validate_write_input)
         options_layout.addWidget(self.write_button)
         options_layout.addStretch()
         
@@ -1215,6 +1219,12 @@ class NFCReaderGUI(QMainWindow):
             QMessageBox.critical(self, "Error", "Please enter a URL to write to the tag")
             return
             
+        # Additional validation to prevent accidental writes
+        if not any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
+            QMessageBox.critical(self, "Error", 
+                "Please enter a valid URL starting with http://, https://, or www.")
+            return
+            
         # Validate that input is a URL
         if not any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
             QMessageBox.critical(self, "Error", "Only URLs are allowed. Please enter a valid URL starting with http://, https://, or www.")
@@ -1244,6 +1254,14 @@ class NFCReaderGUI(QMainWindow):
         threading.Thread(target=self.batch_write_tags, 
                        args=(text, quantity), 
                        daemon=True).start()
+
+    def validate_write_input(self):
+        """Enable write button only if valid URL is present."""
+        text = self.write_entry.text().strip()
+        if any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
+            self.write_button.setEnabled(True)
+        else:
+            self.write_button.setEnabled(False)
 
     def update_tag_status(self, detected: bool, locked: bool = False):
         """Update the tag status indicator and label."""
