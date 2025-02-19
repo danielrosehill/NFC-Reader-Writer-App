@@ -566,58 +566,41 @@ class NFCReaderGUI(QMainWindow):
             }
         """)
         
-        # Paste button with better styling
-        paste_button = QPushButton("Paste")
-        paste_button.setIcon(QIcon.fromTheme("edit-paste"))
+        # Paste button with circular icon style
+        paste_button = QPushButton("📋")
         paste_button.setToolTip("Paste from clipboard")
         paste_button.clicked.connect(self.paste_to_write_entry)
-        paste_button.setFixedSize(100, 50)  # Larger to match input field
+        paste_button.setFixedSize(40, 40)
         paste_button.setStyleSheet("""
-            QPushButton {
-                background-color: #1976d2;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px;
-                font-family: 'Segoe UI';
-                font-size: 16px;
-                margin-right: 10px;
+            QPushButton { 
+                color: #1976d2;
+                background-color: white;
+                border: 1px solid #1976d2;
+                border-radius: 20px;
+                font-size: 20px;
+                padding: 0;
             }
             QPushButton:hover {
-                background-color: #1e88e5;
-            }
-            QPushButton:pressed {
-                background-color: #1565c0;
-            }
-            QPushButton QIcon {
-                color: white;
+                background-color: #e3f2fd;
             }
         """)
         
-        # Clear button with better styling
-        clear_button = QPushButton("Clear")
-        clear_button.setIcon(QIcon.fromTheme("edit-clear"))
+        # Clear button with circular icon style
+        clear_button = QPushButton("🗑️")
         clear_button.setToolTip("Clear input")
         clear_button.clicked.connect(self.clear_write_entry)
-        clear_button.setFixedSize(100, 50)  # Larger to match input field
+        clear_button.setFixedSize(40, 40)
         clear_button.setStyleSheet("""
-            QPushButton {
-                background-color: #f44336;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px;
-                font-family: 'Segoe UI';
-                font-size: 16px;
+            QPushButton { 
+                color: #f44336;
+                background-color: white;
+                border: 1px solid #f44336;
+                border-radius: 20px;
+                font-size: 20px;
+                padding: 0;
             }
             QPushButton:hover {
-                background-color: #e53935;
-            }
-            QPushButton:pressed {
-                background-color: #c62828;
-            }
-            QPushButton QIcon {
-                color: white;
+                background-color: #ffebee;
             }
         """)
         
