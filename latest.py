@@ -6,6 +6,9 @@ import time
 import queue
 import subprocess
 import re
+import ssl
+import urllib.request
+import urllib.error
 from typing import Optional, List, Tuple
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QLabel, QPushButton, QTabWidget, 
@@ -1057,41 +1060,62 @@ class NFCReaderGUI(QMainWindow):
                             # Update URL label and try to open web URLs
                             self.url_signal.emit(url)
                             if url.startswith(("http://", "https://")):
-                                # Try to open URL with different methods
-                                methods = [
-                                    (['xdg-open', url], "System default browser"),
-                                    (['firefox', url], "Firefox"),
-                                    (['google-chrome', url], "Chrome"),
-                                    (['chromium', url], "Chromium"),
-                                    (['sensible-browser', url], "Default browser (Debian/Ubuntu)"),
-                                ]
+                                # Validate URL first
+                                try:
+                                    # Create SSL context that ignores certificate errors
+                                    ctx = ssl.create_default_context()
+                                    ctx.check_hostname = False
+                                    ctx.verify_mode = ssl.CERT_NONE
+                                    
+                                    # Test URL accessibility
+                                    req = urllib.request.Request(
+                                        url,
+                                        headers={'User-Agent': 'Mozilla/5.0'}
+                                    )
+                                    urllib.request.urlopen(req, context=ctx, timeout=5)
+                                    
+                                    # If URL is accessible, try to open in browser
+                                    methods = [
+                                        (['xdg-open', url], "System default browser"),
+                                        (['firefox', '--no-remote', url], "Firefox"),
+                                        (['google-chrome', '--no-sandbox', url], "Chrome"),
+                                        (['chromium', '--no-sandbox', url], "Chromium"),
+                                        (['sensible-browser', url], "Default browser (Debian/Ubuntu)"),
+                                    ]
+                                    
+                                    success = False
+                                    for cmd, method in methods:
+                                        try:
+                                            self.log_signal.emit("Browser", f"Attempting to open URL with {method}")
+                                            result = subprocess.run(
+                                                cmd, 
+                                                capture_output=True, 
+                                                text=True,
+                                                start_new_session=True
+                                            )
+                                            if result.returncode == 0:
+                                                self.log_signal.emit("Browser", f"Successfully opened URL with {method}")
+                                                success = True
+                                                break
+                                            else:
+                                                self.log_signal.emit("Debug", f"{method} failed: {result.stderr}")
+                                        except FileNotFoundError:
+                                            self.log_signal.emit("Debug", f"{method} not found, trying next method")
+                                            continue
+                                        except Exception as e:
+                                            self.log_signal.emit("Debug", f"{method} error: {str(e)}")
+                                            continue
+                                    
+                                    if not success:
+                                        self.log_signal.emit("Error", "Failed to open URL with any available browser")
                                 
-                                success = False
-                                for cmd, method in methods:
-                                    try:
-                                        self.log_signal.emit("Browser", f"Attempting to open URL with {method}")
-                                        # Use start_new_session=True to detach browser from this process
-                                        result = subprocess.run(
-                                            cmd, 
-                                            capture_output=True, 
-                                            text=True,
-                                            start_new_session=True
-                                        )
-                                        if result.returncode == 0:
-                                            self.log_signal.emit("Browser", f"Successfully opened URL with {method}")
-                                            success = True
-                                            break
-                                        else:
-                                            self.log_signal.emit("Debug", f"{method} failed: {result.stderr}")
-                                    except FileNotFoundError:
-                                        self.log_signal.emit("Debug", f"{method} not found, trying next method")
-                                        continue
-                                    except Exception as e:
-                                        self.log_signal.emit("Debug", f"{method} error: {str(e)}")
-                                        continue
-                                
-                                if not success:
-                                    self.log_signal.emit("Error", "Failed to open URL with any available browser")
+                                except urllib.error.URLError as e:
+                                    if isinstance(e.reason, ssl.SSLError):
+                                        self.log_signal.emit("Error", f"SSL Error: {str(e.reason)}. URL may be using an invalid certificate.")
+                                    else:
+                                        self.log_signal.emit("Error", f"Failed to access URL: {str(e.reason)}")
+                                except Exception as e:
+                                    self.log_signal.emit("Error", f"URL validation failed: {str(e)}")
                         elif record_type_bytes == b'T' or (len(record_type) == 1 and record_type[0] == 0x54):  # Text Record
                             # First byte contains text info
                             text_info = data[offset]
