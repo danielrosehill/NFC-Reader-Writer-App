@@ -41,7 +41,7 @@ executable = 'nfc-rw' + ('.exe' if sys.platform == 'win32' else '')
 executable_path = os.path.join(build_dir, executable)
 
 if os.path.exists(executable_path):
-    print(f'\nBuild completed successfully!')
-    print(f'Executable created at: {executable_path}')
+    print('\nBuild completed successfully!')
+    print('Executable created at: {}'.format(executable_path))
 else:
     print('\nError: Build failed to create executable')
