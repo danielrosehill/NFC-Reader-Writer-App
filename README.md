@@ -5,6 +5,8 @@
 ![Made With Claude Sonnet 3.5](https://img.shields.io/badge/Made_With-Claude_Sonnet_3.5-blue)  
 ![Made With Cline IDE](https://img.shields.io/badge/Made_With-Cline_IDE-green)
 
+![alt text](screenshots/v3/1.png)
+
 This is a Python implementation for reading and writing NFC tags using the ACR1252U NFC reader. The application features a modern dark-themed PyQt6 graphical interface with comprehensive NFC tag reading and writing capabilities.
 
 ## Key Features
@@ -22,17 +24,13 @@ This is a Python implementation for reading and writing NFC tags using the ACR12
 ### Writing Mode
 
 The GUI supports the ability to write URLs to NFC tags and write and lock in one operation. 
-
-![alt text](screenshots/v5/1.png)
-
-![alt text](screenshots/v3/2.png)
+ 
 
 ## Reading Mode
 
 Reading mode supports continuous reading operation, detected URL display, and automatic opening of URLs in Google Chrome.
 
-![alt text](screenshots/v5/3.png)
-
+ 
 ## Generated With Claude Sonnet 3.5 + Cline IDE!
 
 This GUI for reading and writing NFC tags was a product of necessity and of the amazing advance in AI. 
