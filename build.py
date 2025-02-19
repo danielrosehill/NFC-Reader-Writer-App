@@ -1,13 +1,35 @@
 import os
 import sys
+import venv
+import subprocess
 from datetime import datetime
-import PyInstaller.__main__
 import shutil
+
+def setup_venv():
+    venv_dir = 'venv'
+    if not os.path.exists(venv_dir):
+        print("Creating virtual environment...")
+        venv.create(venv_dir, with_pip=True)
+    
+    # Get the path to pip in the virtual environment
+    if sys.platform == "win32":
+        pip_path = os.path.join(venv_dir, 'Scripts', 'pip')
+        python_path = os.path.join(venv_dir, 'Scripts', 'python')
+    else:
+        pip_path = os.path.join(venv_dir, 'bin', 'pip')
+        python_path = os.path.join(venv_dir, 'bin', 'python')
+    
+    print("Installing requirements...")
+    subprocess.check_call([pip_path, 'install', '-r', 'requirements.txt'])
+    return python_path
 
 # Create build directory
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 build_dir = os.path.join('build', 'build_{}'.format(timestamp))
 os.makedirs(build_dir, exist_ok=True)
+
+# Setup virtual environment and get python path
+python_path = setup_venv()
 
 # Ensure source paths are absolute
 src_dir = os.path.abspath(os.path.dirname(__file__))
@@ -28,8 +50,8 @@ args = [
     '--distpath', build_dir,
 ]
 
-# Run PyInstaller
-PyInstaller.__main__.run(args)
+# Run PyInstaller through the virtual environment
+subprocess.check_call([python_path, '-m', 'PyInstaller'] + args)
 
 # Clean up temporary directories
 temp_dir = os.path.join(build_dir, 'temp')
