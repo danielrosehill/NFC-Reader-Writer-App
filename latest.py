@@ -543,9 +543,17 @@ class NFCReaderGUI(QMainWindow):
         input_group = QGroupBox("Tag Content")
         input_layout = QVBoxLayout(input_group)
         
-        # URL/Text input
-        input_label = QLabel("Enter URL or message to write to tag:")
+        # URL input
+        input_label = QLabel("Enter URL to write to tag:")
         input_label.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        
+        # Add validation label
+        self.validation_label = QLabel("")
+        self.validation_label.setStyleSheet("margin-top: 5px;")
+        
+        # Add character counter
+        self.char_count_label = QLabel("Characters remaining: 137")
+        self.char_count_label.setStyleSheet("color: #666666; margin-top: 5px;")
         
         # Input container with buttons
         input_container = QWidget()
@@ -610,7 +618,38 @@ class NFCReaderGUI(QMainWindow):
         
         input_layout.addWidget(input_label)
         input_layout.addWidget(input_container)
-        input_layout.addSpacing(20)  # Add spacing below input field
+        input_layout.addWidget(self.validation_label)
+        input_layout.addWidget(self.char_count_label)
+        
+        # URL Preview section
+        preview_group = QGroupBox("URL Preview")
+        preview_layout = QVBoxLayout(preview_group)
+        
+        self.url_preview = QLabel("")
+        self.url_preview.setStyleSheet("""
+            QLabel {
+                font-family: 'Ubuntu Mono', monospace;
+                font-size: 14px;
+                color: #1976D2;
+                padding: 10px;
+                background-color: #E3F2FD;
+                border-radius: 4px;
+                word-wrap: break-word;
+            }
+        """)
+        self.url_preview.setWordWrap(True)
+        
+        test_url_button = QPushButton("🔗 Test URL")
+        test_url_button.setToolTip("Open URL in browser to test")
+        test_url_button.clicked.connect(self.test_url)
+        test_url_button.setFixedWidth(120)
+        
+        preview_layout.addWidget(self.url_preview)
+        preview_layout.addWidget(test_url_button, alignment=Qt.AlignmentFlag.AlignRight)
+        
+        input_layout.addSpacing(10)
+        input_layout.addWidget(preview_group)
+        input_layout.addSpacing(10)
         
         # Batch writing section
         batch_widget = QWidget()
@@ -1377,15 +1416,54 @@ class NFCReaderGUI(QMainWindow):
     def clear_write_entry(self):
         """Clear the write entry field."""
         self.write_entry.clear()
+        self.url_preview.clear()
+        self.validation_label.clear()
+        self.char_count_label.setText("Characters remaining: 137")
         self.validate_write_input()
+        
+    def test_url(self):
+        """Test the URL by opening it in the default browser."""
+        url = self.write_entry.text().strip()
+        if url:
+            if not url.startswith(('http://', 'https://')):
+                url = 'https://' + url.lstrip('www.')
+            try:
+                subprocess.Popen(['xdg-open', url], start_new_session=True)
+                self.log_signal.emit("System", "Testing URL in browser")
+            except Exception as e:
+                self.log_signal.emit("Error", f"Failed to test URL: {str(e)}")
 
     def validate_write_input(self):
-        """Enable write button only if valid URL is present."""
+        """Validate URL input and provide feedback."""
         text = self.write_entry.text().strip()
-        if any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
-            self.write_button.setEnabled(True)
+        
+        # Update character count
+        remaining = 137 - len(text)  # NTAG213 URL capacity
+        self.char_count_label.setText(f"Characters remaining: {remaining}")
+        
+        # Validate URL format
+        if text:
+            if any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
+                self.write_button.setEnabled(True)
+                self.url_preview.setText(text)
+                self.validation_label.setStyleSheet("color: #4CAF50;")  # Green
+                self.validation_label.setText("✓ Valid URL format")
+            else:
+                self.write_button.setEnabled(False)
+                self.url_preview.setText("")
+                self.validation_label.setStyleSheet("color: #F44336;")  # Red
+                self.validation_label.setText("✗ URL must start with http://, https://, or www.")
         else:
             self.write_button.setEnabled(False)
+            self.url_preview.setText("")
+            self.validation_label.setText("")
+            
+        # Update preview styling based on length
+        if remaining < 0:
+            self.char_count_label.setStyleSheet("color: #F44336;")  # Red
+            self.write_button.setEnabled(False)
+        else:
+            self.char_count_label.setStyleSheet("color: #666666;")  # Gray
 
     def update_tag_status(self, detected: bool, locked: bool = False):
         """Update the tag status indicator and label."""
