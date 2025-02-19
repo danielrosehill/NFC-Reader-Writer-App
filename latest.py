@@ -1237,13 +1237,26 @@ class NFCReaderGUI(QMainWindow):
                             self.log_signal.emit("URL Detected", f"Found URL: {url}")
                             self.url_signal.emit(url)
                             
-                            # Try to open URL in browser
+                            # Try to open URL in Chrome
                             if url.startswith(("http://", "https://")):
                                 try:
-                                    subprocess.Popen(['xdg-open', url], start_new_session=True)
-                                    self.log_signal.emit("System", "Opening URL in browser")
+                                    # Try google-chrome first
+                                    subprocess.Popen(['google-chrome', url], start_new_session=True)
+                                    self.log_signal.emit("System", "Opening URL in Chrome")
+                                except FileNotFoundError:
+                                    try:
+                                        # Fallback to chrome if google-chrome not found
+                                        subprocess.Popen(['chrome', url], start_new_session=True)
+                                        self.log_signal.emit("System", "Opening URL in Chrome")
+                                    except FileNotFoundError:
+                                        # Last resort fallback to xdg-open
+                                        try:
+                                            subprocess.Popen(['xdg-open', url], start_new_session=True)
+                                            self.log_signal.emit("System", "Opening URL in default browser")
+                                        except Exception as e:
+                                            self.log_signal.emit("Error", f"Failed to open URL: {str(e)}")
                                 except Exception as e:
-                                    self.log_signal.emit("Error", f"Failed to open URL: {str(e)}")
+                                    self.log_signal.emit("Error", f"Failed to open URL in Chrome: {str(e)}")
                             
                             # Handle special URL types
                             if url.startswith("tel:"):
@@ -1430,10 +1443,23 @@ class NFCReaderGUI(QMainWindow):
             if not url.startswith(('http://', 'https://')):
                 url = 'https://' + url.lstrip('www.')
             try:
-                subprocess.Popen(['xdg-open', url], start_new_session=True)
-                self.log_signal.emit("System", "Testing URL in browser")
+                # Try google-chrome first
+                subprocess.Popen(['google-chrome', url], start_new_session=True)
+                self.log_signal.emit("System", "Testing URL in Chrome")
+            except FileNotFoundError:
+                try:
+                    # Fallback to chrome if google-chrome not found
+                    subprocess.Popen(['chrome', url], start_new_session=True)
+                    self.log_signal.emit("System", "Testing URL in Chrome")
+                except FileNotFoundError:
+                    # Last resort fallback to xdg-open
+                    try:
+                        subprocess.Popen(['xdg-open', url], start_new_session=True)
+                        self.log_signal.emit("System", "Testing URL in default browser")
+                    except Exception as e:
+                        self.log_signal.emit("Error", f"Failed to test URL: {str(e)}")
             except Exception as e:
-                self.log_signal.emit("Error", f"Failed to test URL: {str(e)}")
+                self.log_signal.emit("Error", f"Failed to test URL in Chrome: {str(e)}")
 
     def validate_write_input(self):
         """Validate URL input and provide feedback."""
