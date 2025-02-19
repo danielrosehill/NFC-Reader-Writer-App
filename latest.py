@@ -549,16 +549,16 @@ class NFCReaderGUI(QMainWindow):
         clear_button.setIcon(QIcon.fromTheme("edit-clear"))
         clear_button.setToolTip("Clear input")
         clear_button.clicked.connect(self.clear_write_entry)
-        clear_button.setFixedSize(80, 40)  # Wider button
+        clear_button.setFixedSize(100, 50)  # Larger to match input field
         clear_button.setStyleSheet("""
             QPushButton {
                 background-color: #f44336;
                 color: white;
                 border: none;
-                border-radius: 6px;
-                padding: 8px;
+                border-radius: 8px;
+                padding: 12px;
                 font-family: 'Segoe UI';
-                font-size: 14px;
+                font-size: 16px;  # Larger text
             }
             QPushButton:hover {
                 background-color: #e53935;
