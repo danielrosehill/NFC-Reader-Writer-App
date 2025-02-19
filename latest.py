@@ -1065,14 +1065,13 @@ class NFCReaderGUI(QMainWindow):
                                     if re.match(r'^https?://(?:localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', url):
                                         self.log_signal.emit("Debug", "Local URL detected - skipping validation")
                                         
-                                        # Try to open in browser
+                                        # Try to open in browser with SSL verification disabled for local URLs
                                         methods = [
-                                            (['xdg-open', '--new-window', url], "System default browser"),
-                                            (['firefox', '--new-window', url], "Firefox"),
+                                            (['google-chrome', '--no-sandbox', '--ignore-certificate-errors', url], "Chrome"),
+                                            (['google-chrome-stable', '--no-sandbox', '--ignore-certificate-errors', url], "Chrome Stable"),
                                             (['xdg-open', url], "System default browser"),
-                                            (['firefox', '--no-remote', url], "Firefox"),
-                                            (['google-chrome', '--no-sandbox', url], "Chrome"),
-                                            (['chromium', '--no-sandbox', url], "Chromium"),
+                                            (['chromium', '--no-sandbox', '--ignore-certificate-errors', url], "Chromium"),
+                                            (['firefox', '--no-remote', '--ignore-ssl-errors=yes', url], "Firefox"),
                                             (['sensible-browser', url], "Default browser (Debian/Ubuntu)"),
                                         ]
                                         
