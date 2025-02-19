@@ -98,7 +98,7 @@ class NFCReaderGUI(QMainWindow):
             QMainWindow, QWidget {
                 background-color: #ffffff;
                 color: #000000;
-                font-family: 'Segoe UI', sans-serif;
+                font-family: 'Ubuntu', 'Segoe UI', sans-serif;
             }
             
             /* Main window style */
@@ -315,6 +315,7 @@ class NFCReaderGUI(QMainWindow):
         self.copy_url_button.setToolTip("Copy URL to clipboard")
         self.copy_url_button.clicked.connect(self.copy_detected_url)
         self.copy_url_button.setFixedSize(30, 30)
+        self.copy_url_button.setStyleSheet("QPushButton { color: white; }")
         url_layout.addWidget(self.url_label)
         url_layout.addWidget(self.copy_url_button)
         layout.addWidget(url_group)
@@ -699,8 +700,9 @@ class NFCReaderGUI(QMainWindow):
             for r in available_readers:
                 if "ACR1252" in str(r):
                     self.reader = r
-                    self.status_signal.emit("Status: Reader connected")
-                    self.statusBar.showMessage("Reader connected and ready")
+                    reader_id = str(r).split(" ")[0]  # Get the first part of reader string
+                    self.status_signal.emit(f"Status: Reader connected ({reader_id})")
+                    self.statusBar.showMessage(f"Reader {reader_id} connected and ready")
                     return
 
             self.status_signal.emit("Status: ACR1252U not found")
