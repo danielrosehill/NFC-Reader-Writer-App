@@ -34,7 +34,8 @@ class NFCReaderGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("NFC Reader/Writer")
-        self.setMinimumSize(900, 700)
+        self.setMinimumSize(1000, 800)
+        self.setWindowIcon(QIcon('launcher-icon/acr_1252.ico'))
         
         # Initialize reader
         try:
@@ -96,6 +97,13 @@ class NFCReaderGUI(QMainWindow):
             QMainWindow, QWidget {
                 background-color: #ffffff;
                 color: #000000;
+                font-family: 'Segoe UI', sans-serif;
+            }
+            
+            /* Main window style */
+            QMainWindow {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ffffff, stop:1 #f5f5f5);
             }
             
             /* Add spacing between sections */
@@ -112,13 +120,15 @@ class NFCReaderGUI(QMainWindow):
             QTabBar::tab {
                 background-color: #f0f0f0;
                 color: #000000;
-                padding: 12px 28px;
+                padding: 14px 32px;
                 border: 1px solid #d0d0d0;
                 border-bottom: none;
-                margin-right: 2px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-                font-weight: 500;
+                margin-right: 4px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                font-weight: 600;
+                font-size: 13px;
+                min-width: 120px;
             }
             QTabBar::tab:selected {
                 background-color: #ffffff;
@@ -133,19 +143,24 @@ class NFCReaderGUI(QMainWindow):
             QLabel#status_label {
                 color: #1976d2;
                 font-weight: bold;
-                padding: 12px;
+                padding: 16px;
                 background-color: #e3f2fd;
-                border-radius: 4px;
-                margin: 5px 0;
+                border-radius: 8px;
+                margin: 8px 0;
+                font-size: 14px;
+                border: 1px solid rgba(25, 118, 210, 0.1);
+                box-shadow: 0 2px 4px rgba(25, 118, 210, 0.05);
             }
             QPushButton {
                 background-color: #1976d2;
                 color: white;
                 border: none;
                 padding: 12px 24px;
-                border-radius: 4px;
-                font-weight: 500;
+                border-radius: 8px;
+                font-weight: 600;
                 min-width: 120px;
+                font-size: 13px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             
             QPushButton:disabled {
@@ -189,12 +204,14 @@ class NFCReaderGUI(QMainWindow):
                 padding: 6px;
             }
             QGroupBox {
-                border: 1px solid #d0d0d0;
-                border-radius: 4px;
-                margin-top: 1.2em;
-                padding-top: 1.2em;
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                margin-top: 1.5em;
+                padding-top: 1.5em;
+                padding: 15px;
                 color: #000000;
-                background-color: #fafafa;
+                background-color: #ffffff;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
