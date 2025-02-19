@@ -503,15 +503,16 @@ class NFCReaderGUI(QMainWindow):
         input_container_layout.setContentsMargins(0, 0, 0, 0)
         
         self.write_entry = QLineEdit()
-        self.write_entry.setMinimumWidth(400)
-        self.write_entry.setMinimumHeight(40)  # Make field taller
+        self.write_entry.setMinimumWidth(500)  # Wider to accommodate URLs
+        self.write_entry.setMinimumHeight(50)  # More substantial height
         self.write_entry.setStyleSheet("""
             QLineEdit {
                 font-family: 'Segoe UI';
-                font-size: 14px;
-                padding: 8px;
+                font-size: 16px;  # Slightly larger text
+                padding: 12px;
                 border: 2px solid #1976d2;
-                border-radius: 6px;
+                border-radius: 8px;
+                margin-bottom: 10px;  # Add some spacing below
             }
             QLineEdit:focus {
                 border-color: #1e88e5;
@@ -523,16 +524,17 @@ class NFCReaderGUI(QMainWindow):
         paste_button.setIcon(QIcon.fromTheme("edit-paste"))
         paste_button.setToolTip("Paste from clipboard")
         paste_button.clicked.connect(self.paste_to_write_entry)
-        paste_button.setFixedSize(80, 40)  # Wider button
+        paste_button.setFixedSize(100, 50)  # Larger to match input field
         paste_button.setStyleSheet("""
             QPushButton {
                 background-color: #1976d2;
                 color: white;
                 border: none;
-                border-radius: 6px;
-                padding: 8px;
+                border-radius: 8px;
+                padding: 12px;
                 font-family: 'Segoe UI';
-                font-size: 14px;
+                font-size: 16px;  # Larger text
+                margin-right: 10px;  # Add spacing between buttons
             }
             QPushButton:hover {
                 background-color: #1e88e5;
