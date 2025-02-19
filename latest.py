@@ -525,7 +525,7 @@ class NFCReaderGUI(QMainWindow):
         self.lock_checkbox.setChecked(True)
         options_layout.addWidget(self.lock_checkbox)
         
-        self.write_button = QPushButton("Write Content to Tag")
+        self.write_button = QPushButton("Write Tag")
         self.write_button.clicked.connect(self.write_tag)
         self.write_button.setFixedWidth(200)
         self.write_button.setEnabled(False)  # Disabled by default
