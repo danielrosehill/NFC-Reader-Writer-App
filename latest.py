@@ -315,7 +315,15 @@ class NFCReaderGUI(QMainWindow):
         self.copy_url_button.setToolTip("Copy URL to clipboard")
         self.copy_url_button.clicked.connect(self.copy_detected_url)
         self.copy_url_button.setFixedSize(30, 30)
-        self.copy_url_button.setStyleSheet("QPushButton { color: white; }")
+        self.copy_url_button.setStyleSheet("""
+            QPushButton { 
+                color: white;
+                background-color: #1976d2;
+            }
+            QPushButton QIcon {
+                color: white;
+            }
+        """)
         url_layout.addWidget(self.url_label)
         url_layout.addWidget(self.copy_url_button)
         layout.addWidget(url_group)
