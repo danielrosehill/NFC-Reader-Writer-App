@@ -103,7 +103,7 @@ class NFCReaderGUI(QMainWindow):
             /* Main window style */
             QMainWindow {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffffff, stop:1 #f5f5f5);
+                    stop:0 #ffffff, stop:1 #e8e8e8);
             }
             
             /* Add spacing between sections */
@@ -141,15 +141,15 @@ class NFCReaderGUI(QMainWindow):
                 color: #000000;
             }
             QLabel#status_label {
-                color: #1976d2;
+                color: #1565c0;
                 font-weight: bold;
                 padding: 16px;
-                background-color: #e3f2fd;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #e3f2fd, stop:1 #bbdefb);
                 border-radius: 8px;
                 margin: 8px 0;
                 font-size: 14px;
-                border: 1px solid rgba(25, 118, 210, 0.1);
-                border: 1px solid rgba(25, 118, 210, 0.1);
+                border: 1px solid rgba(25, 118, 210, 0.2);
             }
             QPushButton {
                 background-color: #1976d2;
@@ -160,7 +160,9 @@ class NFCReaderGUI(QMainWindow):
                 font-weight: 600;
                 min-width: 120px;
                 font-size: 13px;
-                border: 1px solid rgba(0,0,0,0.1);
+                border: 1px solid rgba(0,0,0,0.2);
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #1e88e5, stop:1 #1976d2);
             }
             
             QPushButton:disabled {
@@ -204,14 +206,15 @@ class NFCReaderGUI(QMainWindow):
                 padding: 6px;
             }
             QGroupBox {
-                border: 1px solid #e0e0e0;
+                border: 1px solid #d0d0d0;
                 border-radius: 12px;
                 margin-top: 1.5em;
                 padding-top: 1.5em;
                 padding: 15px;
                 color: #000000;
-                background-color: #ffffff;
-                border: 1px solid rgba(0,0,0,0.1);
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ffffff, stop:1 #f8f8f8);
+                border: 1px solid rgba(0,0,0,0.15);
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
