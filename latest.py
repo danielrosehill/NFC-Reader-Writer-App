@@ -301,6 +301,7 @@ class NFCReaderGUI(QMainWindow):
         self.log_text.setFont(QFont("Segoe UI", 10))
         self.log_text.setStyleSheet("""
             QTextEdit {
+                font-family: 'Segoe UI';
                 line-height: 1.6;
                 padding: 10px;
                 background-color: #FFFFFF;
@@ -1168,10 +1169,10 @@ class NFCReaderGUI(QMainWindow):
         # Format based on message type
         if title in ["Debug", "Error", "System"]:
             # Technical messages in monospace
-            formatted_msg = f'<span style="color: #666666">[{timestamp}]</span> <span style="font-family: Consolas; color: {self._get_title_color(title)}">[{title}]</span> <span style="font-family: Consolas">{message}</span>'
+            formatted_msg = f'<span style="color: #666666">[{timestamp}]</span> <span style="font-family: Segoe UI; color: {self._get_title_color(title)}">[{title}]</span> <span style="font-family: Segoe UI">{message}</span>'
         else:
             # User-friendly messages in regular font
-            formatted_msg = f'<span style="color: #666666">[{timestamp}]</span> <span style="color: {self._get_title_color(title)}">[{title}]</span> {message}'
+            formatted_msg = f'<span style="color: #666666">[{timestamp}]</span> <span style="font-family: Segoe UI; color: {self._get_title_color(title)}">[{title}]</span> <span style="font-family: Segoe UI">{message}</span>'
             
         self.log_text.append(formatted_msg)
         self.log_text.verticalScrollBar().setValue(
