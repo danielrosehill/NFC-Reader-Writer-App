@@ -469,11 +469,11 @@ class NFCReaderGUI(QMainWindow):
         layout = QVBoxLayout(self.write_tab)
         
         # Input section
-        input_group = QGroupBox("Input")
+        input_group = QGroupBox("Tag Content")
         input_layout = QVBoxLayout(input_group)
         
         # URL/Text input
-        input_label = QLabel("Enter URL or text to write:")
+        input_label = QLabel("Enter URL or message to write to tag:")
         input_label.setFont(QFont("", 10, QFont.Weight.Bold))
         self.write_entry = QLineEdit()
         input_layout.addWidget(input_label)
@@ -497,14 +497,14 @@ class NFCReaderGUI(QMainWindow):
         layout.addWidget(input_group)
         
         # Options section
-        options_group = QGroupBox("Options")
+        options_group = QGroupBox("Writing Options")
         options_layout = QHBoxLayout(options_group)
         
         self.lock_checkbox = QCheckBox("Lock tag after writing")
         self.lock_checkbox.setChecked(True)
         options_layout.addWidget(self.lock_checkbox)
         
-        self.write_button = QPushButton("Write to Tag")
+        self.write_button = QPushButton("Write Content to Tag")
         self.write_button.clicked.connect(self.write_tag)
         self.write_button.setFixedWidth(200)
         options_layout.addWidget(self.write_button)
@@ -513,7 +513,7 @@ class NFCReaderGUI(QMainWindow):
         layout.addWidget(options_group)
         
         # Progress section
-        progress_group = QGroupBox("Progress")
+        progress_group = QGroupBox("Writing Progress")
         progress_layout = QVBoxLayout(progress_group)
         self.progress_label = QLabel("")
         progress_layout.addWidget(self.progress_label)
@@ -1163,7 +1163,7 @@ class NFCReaderGUI(QMainWindow):
 
         text = self.write_entry.text().strip()
         if not text:
-            QMessageBox.critical(self, "Error", "Please enter text to write")
+            QMessageBox.critical(self, "Error", "Please enter a URL or message to write to the tag")
             return
             
         # Validate URL format if it looks like a URL
@@ -1184,8 +1184,8 @@ class NFCReaderGUI(QMainWindow):
             QMessageBox.critical(self, "Error", "Quantity must be at least 1")
             return
             
-        self.write_status.setText("Waiting for tags...")
-        self.progress_label.setText(f"Starting batch write: 0/{quantity} tags written")
+        self.write_status.setText("Ready - Please present first tag...")
+        self.progress_label.setText(f"Starting batch operation: 0/{quantity} tags written")
         
         threading.Thread(target=self.batch_write_tags, 
                        args=(text, quantity), 
