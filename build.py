@@ -6,7 +6,7 @@ import shutil
 
 # Create build directory
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-build_dir = os.path.join('build', f'build_{timestamp}')
+build_dir = os.path.join('build', 'build_{}'.format(timestamp))
 os.makedirs(build_dir, exist_ok=True)
 
 # Ensure source paths are absolute
@@ -20,7 +20,7 @@ args = [
     '--clean',    # Clean PyInstaller cache
     '--name', 'nfc-rw',
     # Bundle the image file with absolute path
-    '--add-data', f'{image_path}{os.pathsep}images',
+    '--add-data', '{}{}'.format(image_path, os.pathsep + 'images'),
     # Temporary directories for build process
     '--workpath', os.path.join(build_dir, 'temp'),
     '--specpath', os.path.join(build_dir, 'temp'),
