@@ -1,39 +1,35 @@
 # NFC Reader/Writer for ACR1252U
 
-![alt text](photos/tag-scanning.jpg)
+![NFC Tag Scanning](photos/tag-scanning.jpg)
 
 ![Made With Claude Sonnet 3.5](https://img.shields.io/badge/Made_With-Claude_Sonnet_3.5-blue)  
 ![Made With Cline IDE](https://img.shields.io/badge/Made_With-Cline_IDE-green)
 
-![alt text](screenshots/v3/1.png)
+![Application Screenshot](screenshots/v3/1.png)
 
-This is a Python implementation for reading and writing NFC tags using the ACR1252U NFC reader. The application features a modern dark-themed PyQt6 graphical interface with comprehensive NFC tag reading and writing capabilities.
+A Python application for reading and writing NFC tags using the ACR1252U NFC reader. Features a modern PyQt6 graphical interface with comprehensive NFC tag management capabilities, including batch operations and tag locking.
 
 ## Key Features
 
-- Modern dark-themed PyQt6 interface
-- Real-time URL detection with clipboard support
+- Modern PyQt6 interface with light/dark theme support
+- Real-time URL detection and validation
 - Comprehensive NDEF message interpretation
-- Batch writing capability
-- Tag locking functionality
+- Batch writing for multiple tags
+- Tag locking and security features
 - Detailed debug logging
-- Chrome browser integration
+- Chrome/Chromium browser integration
+- Clipboard integration for quick URL copying
 
-## Screenshots - V5
+## Screenshots
 
 ### Writing Mode
+The application supports writing URLs to NFC tags with optional locking in a single operation. The batch writing feature allows efficient programming of multiple tags.
 
-The GUI supports the ability to write URLs to NFC tags and write and lock in one operation. 
- 
+### Reading Mode
+Features continuous tag scanning with real-time URL detection and automatic Chrome browser integration. Supports comprehensive NDEF message interpretation and debugging.
 
-## Reading Mode
-
-Reading mode supports continuous reading operation, detected URL display, and automatic opening of URLs in Google Chrome.
-
- 
-## Generated With Claude Sonnet 3.5 + Cline IDE!
-
-This GUI for reading and writing NFC tags was a product of necessity and of the amazing advance in AI. 
+## AI-Assisted Development
+This application was developed using Claude Sonnet 3.5 and the Cline IDE, demonstrating the potential of AI-assisted development for creating practical solutions.
 
 In 2024 I stumbled upon the excellent [Homebox home inventory system](https://github.com/sysadminsmedia/homebox) and have been using it ever since. 
 
