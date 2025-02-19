@@ -149,7 +149,7 @@ class NFCReaderGUI(QMainWindow):
                 margin: 8px 0;
                 font-size: 14px;
                 border: 1px solid rgba(25, 118, 210, 0.1);
-                box-shadow: 0 2px 4px rgba(25, 118, 210, 0.05);
+                border: 1px solid rgba(25, 118, 210, 0.1);
             }
             QPushButton {
                 background-color: #1976d2;
@@ -160,7 +160,7 @@ class NFCReaderGUI(QMainWindow):
                 font-weight: 600;
                 min-width: 120px;
                 font-size: 13px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                border: 1px solid rgba(0,0,0,0.1);
             }
             
             QPushButton:disabled {
@@ -211,7 +211,7 @@ class NFCReaderGUI(QMainWindow):
                 padding: 15px;
                 color: #000000;
                 background-color: #ffffff;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+                border: 1px solid rgba(0,0,0,0.1);
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
