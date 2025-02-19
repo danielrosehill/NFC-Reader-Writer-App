@@ -635,9 +635,11 @@ class NFCReaderGUI(QMainWindow):
                 background-color: #E3F2FD;
                 border-radius: 4px;
                 word-wrap: break-word;
+                min-height: 60px;
             }
         """)
         self.url_preview.setWordWrap(True)
+        self.url_preview.setMinimumHeight(60)
         
         test_url_button = QPushButton("🔗 Test URL")
         test_url_button.setToolTip("Open URL in browser to test")
