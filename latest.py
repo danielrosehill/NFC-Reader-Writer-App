@@ -51,11 +51,6 @@ class NFCReaderGUI(QMainWindow):
         self.last_connection_time = 0
         self.reader = None
 
-        # Initialize copy tab variables
-        self.stored_tag_data = None
-        self.copies_made = 0
-        self.max_copies = 10
-        
         # Setup UI
         self.setup_ui()
         
@@ -223,11 +218,9 @@ class NFCReaderGUI(QMainWindow):
         # Create tabs
         self.read_tab = QWidget()
         self.write_tab = QWidget()
-        self.copy_tab = QWidget()
         self.about_tab = QWidget()
         self.tab_widget.addTab(self.read_tab, "Read Tags")
-        self.tab_widget.addTab(self.write_tab, "Write Tags")
-        self.tab_widget.addTab(self.copy_tab, "Copy Tags")
+        self.tab_widget.addTab(self.write_tab, "Write Tags") 
         self.tab_widget.addTab(self.about_tab, "About")
         
         # Setup read interface
@@ -235,9 +228,6 @@ class NFCReaderGUI(QMainWindow):
         
         # Setup write interface
         self.setup_write_interface()
-        
-        # Setup copy interface
-        self.setup_copy_interface()
         
         # Setup about interface
         self.setup_about_interface()
@@ -1180,194 +1170,6 @@ class NFCReaderGUI(QMainWindow):
             self.tag_indicator.setStyleSheet("background-color: #FFA500; border-radius: 7px;")  # Orange
             self.tag_status_label.setText("No Tag Present")
 
-    def setup_copy_interface(self):
-        """Setup the copy tab interface."""
-        layout = QVBoxLayout(self.copy_tab)
-        
-        # Status section
-        status_frame = QFrame()
-        status_layout = QHBoxLayout(status_frame)
-        self.copy_status_label = QLabel("Status: No tag stored")
-        self.copy_status_label.setObjectName("status_label")
-        status_layout.addWidget(self.copy_status_label)
-        layout.addWidget(status_frame)
-        
-        # Store button
-        self.store_button = QPushButton("Read & Store Tag")
-        self.store_button.clicked.connect(self.store_tag)
-        self.store_button.setFixedWidth(200)
-        layout.addWidget(self.store_button, alignment=Qt.AlignmentFlag.AlignCenter)
-        
-        # Stored tag info group
-        stored_group = QGroupBox("Stored Tag Information")
-        stored_layout = QVBoxLayout(stored_group)
-        
-        # Tag content
-        self.stored_content_label = QLabel("Content: None")
-        self.stored_content_label.setWordWrap(True)
-        stored_layout.addWidget(self.stored_content_label)
-        
-        # Copies remaining
-        self.copies_label = QLabel(f"Copies remaining: {self.max_copies}")
-        stored_layout.addWidget(self.copies_label)
-        
-        layout.addWidget(stored_group)
-        
-        # Copy options group
-        copy_group = QGroupBox("Copy Options")
-        copy_layout = QVBoxLayout(copy_group)
-        
-        # Lock checkbox
-        self.copy_lock_checkbox = QCheckBox("Lock tag after copying")
-        self.copy_lock_checkbox.setChecked(True)
-        copy_layout.addWidget(self.copy_lock_checkbox)
-        
-        # Copy button
-        self.copy_button = QPushButton("Copy to New Tag")
-        self.copy_button.clicked.connect(self.copy_to_tag)
-        self.copy_button.setEnabled(False)
-        self.copy_button.setFixedWidth(200)
-        copy_layout.addWidget(self.copy_button, alignment=Qt.AlignmentFlag.AlignCenter)
-        
-        layout.addWidget(copy_group)
-        
-        # Progress section
-        progress_group = QGroupBox("Progress")
-        progress_layout = QVBoxLayout(progress_group)
-        self.copy_progress_label = QLabel("")
-        progress_layout.addWidget(self.copy_progress_label)
-        layout.addWidget(progress_group)
-        
-        layout.addStretch()
-
-    def store_tag(self):
-        """Read and store tag data for copying."""
-        if not self.reader:
-            QMessageBox.critical(self, "Error", "Reader not connected")
-            return
-            
-        # Reset stored data
-        self.stored_tag_data = None
-        self.copies_made = 0
-        self.copy_button.setEnabled(False)
-        self.copy_status_label.setText("Status: Reading tag...")
-        
-        threading.Thread(target=self._read_and_store_tag, daemon=True).start()
-
-    def _read_and_store_tag(self):
-        """Background thread for reading and storing tag data."""
-        try:
-            connection, connected = self.connect_with_retry()
-            if not connected:
-                self.copy_status_label.setText("Status: No tag detected")
-                return
-                
-            # Read tag memory
-            memory_data = self.read_tag_memory(connection)
-            if memory_data:
-                self.stored_tag_data = memory_data
-                self.copies_made = 0
-                self.copy_button.setEnabled(True)
-                
-                # Try to parse the content for display
-                try:
-                    # Find NDEF message in TLV structure
-                    current_pos = 0
-                    while current_pos < len(memory_data):
-                        if memory_data[current_pos] == 0x03:  # NDEF TLV
-                            length = memory_data[current_pos + 1]
-                            ndef_data = memory_data[current_pos + 2:current_pos + 2 + length]
-                            
-                            # Parse NDEF record
-                            if len(ndef_data) > 3:  # Minimum NDEF record size
-                                record_type = ndef_data[3]  # Type byte after header
-                                if record_type == 0x55:  # URL record
-                                    url_prefix_byte = ndef_data[4]
-                                    url_content = bytes(ndef_data[5:]).decode('utf-8')
-                                    url_prefixes = {
-                                        0x00: "http://www.",
-                                        0x01: "https://www.",
-                                        0x02: "http://",
-                                        0x03: "https://"
-                                    }
-                                    full_url = url_prefixes.get(url_prefix_byte, "") + url_content
-                                    self.stored_content_label.setText(f"Content: {full_url}")
-                                elif record_type == 0x54:  # Text record
-                                    text_content = bytes(ndef_data[5:]).decode('utf-8')
-                                    self.stored_content_label.setText(f"Content: {text_content}")
-                            break
-                        current_pos += 1
-                except Exception as e:
-                    self.stored_content_label.setText("Content: [Raw NDEF data stored]")
-                
-                self.copies_label.setText(f"Copies remaining: {self.max_copies}")
-                self.copy_status_label.setText("Status: Tag stored successfully")
-            else:
-                self.copy_status_label.setText("Status: Failed to read tag data")
-            
-            connection.disconnect()
-            
-        except Exception as e:
-            self.copy_status_label.setText(f"Status: Error - {str(e)}")
-
-    def copy_to_tag(self):
-        """Copy stored tag data to a new tag."""
-        if not self.reader or not self.stored_tag_data:
-            return
-            
-        if self.copies_made >= self.max_copies:
-            QMessageBox.warning(self, "Warning", "Maximum number of copies reached")
-            return
-            
-        self.copy_status_label.setText("Status: Waiting for target tag...")
-        threading.Thread(target=self._copy_to_new_tag, daemon=True).start()
-
-    def _copy_to_new_tag(self):
-        """Background thread for copying tag data."""
-        try:
-            connection, connected = self.connect_with_retry()
-            if not connected:
-                self.copy_progress_label.setText("No tag detected")
-                return
-                
-            # Write the stored data
-            chunk_size = 4
-            for i in range(0, len(self.stored_tag_data), chunk_size):
-                chunk = self.stored_tag_data[i:i + chunk_size]
-                page = 4 + (i // chunk_size)  # Start from page 4
-                
-                # Pad the last chunk with zeros if needed
-                if len(chunk) < chunk_size:
-                    chunk = chunk + [0] * (chunk_size - len(chunk))
-                
-                write_command = [0xFF, 0xD6, 0x00, page, chunk_size] + chunk
-                response, sw1, sw2 = connection.transmit(write_command)
-                
-                if sw1 != 0x90:
-                    raise Exception(f"Failed to write page {page}")
-            
-            # Lock the tag if requested
-            if self.copy_lock_checkbox.isChecked():
-                response, sw1, sw2 = connection.transmit(self.LOCK_CARD)
-                if sw1 != 0x90:
-                    raise Exception("Failed to lock tag")
-            
-            self.copies_made += 1
-            remaining = self.max_copies - self.copies_made
-            
-            self.copies_label.setText(f"Copies remaining: {remaining}")
-            self.copy_progress_label.setText("Tag copied successfully")
-            
-            if remaining == 0:
-                self.copy_button.setEnabled(False)
-                self.copy_status_label.setText("Status: Maximum copies reached")
-            else:
-                self.copy_status_label.setText("Status: Ready for next copy")
-            
-            connection.disconnect()
-            
-        except Exception as e:
-            self.copy_progress_label.setText(f"Error: {str(e)}")
 
     def batch_write_tags(self, text: str, quantity: int):
         """Write the same data to multiple tags."""
