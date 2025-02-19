@@ -513,7 +513,8 @@ class NFCReaderGUI(QMainWindow):
                 padding: 12px;
                 border: 2px solid #1976d2;
                 border-radius: 8px;
-                margin-bottom: 10px;
+                margin-bottom: 25px;  /* Increased bottom margin */
+                margin-top: 10px;     /* Added top margin */
             }
             QLineEdit:focus {
                 border-color: #1e88e5;
