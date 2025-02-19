@@ -29,7 +29,7 @@ The application supports writing URLs to NFC tags with optional locking in a sin
 Features continuous tag scanning with real-time URL detection and automatic Chrome browser integration. Supports comprehensive NDEF message interpretation and debugging.
 
 ## AI-Assisted Development
-This application was developed using Claude Sonnet 3.5 and the Cline IDE, demonstrating the potential of AI-assisted development for creating practical solutions.
+This application was developed using Claude Sonnet 3.5,  Cline (V1) and Aider (V2 on) demonstrating the potential of AI-assisted development for creating practical solutions. The commit history reflects what was an intreresting journey of learning about the capabilities of all of these AI IDEs (and others). 
 
 In 2024 I stumbled upon the excellent [Homebox home inventory system](https://github.com/sysadminsmedia/homebox) and have been using it ever since. 
 
