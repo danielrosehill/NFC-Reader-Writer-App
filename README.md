@@ -1,4 +1,4 @@
-# NFC Reader/Writer for ACR1252U
+# Desktop USB NFC Reader/Writer With Batch Operation Support
 
 ![NFC Tag Scanning](photos/tag-scanning.jpg)
 
@@ -7,7 +7,9 @@
 
  ![alt text](screenshots/v2/1.png)
 
-A Python application for reading and writing NFC tags using the ACR1252U NFC reader. Features a modern PyQt6 graphical interface with comprehensive NFC tag management capabilities, including batch operations and tag locking.
+A Python application for reading and writing NFC tags using USB NFC reader/writers. 
+
+Features a modern PyQt6 graphical interface with comprehensive NFC tag management capabilities, including batch operations and tag locking.
 
 ## Key Features
 
@@ -119,7 +121,7 @@ The GUI version provides:
 ## Features
 
 ### Command Line Interface
-- Automatic detection of ACR1252U reader
+ 
 - Read NFC tag UIDs
 - NDEF message support
 - Fallback to direct write for non-NDEF tags
@@ -150,6 +152,7 @@ The GUI version provides:
      - Status feedback
 - Thread-safe operation
 - Dark theme for improved visibility
+- Detection blacklist to prevent Yubikeys etc from detecting as NFC writers 
 
 ### NTAG213 Support
 - Optimized for NTAG213 memory structure
