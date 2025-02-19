@@ -1165,15 +1165,8 @@ class NFCReaderGUI(QMainWindow):
                             content_start = offset + 1 + lang_code_length
                             content_bytes = data[content_start:content_start+payload_length-1-lang_code_length]  # -1 for status byte
                             
-                            # Show language code if present
-                            if lang_code_length > 0:
-                                lang_code = bytes(data[offset+1:offset+1+lang_code_length]).decode('utf-8')
-                                self.log_signal.emit("Debug", f"Language code: {lang_code}")
-                            
                             text = bytes(content_bytes).decode('utf-8')
                             self.log_signal.emit("Text Record", f"Content: {text}")
-                        else:
-                            self.log_signal.emit("Debug", f"Unknown record type: {bytes(record_type)}")
                     except Exception as e:
                         self.log_signal.emit("Error", f"Failed to decode NDEF: {str(e)}")
             else:
