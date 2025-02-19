@@ -5,7 +5,7 @@
 ![Made With Claude Sonnet 3.5](https://img.shields.io/badge/Made_With-Claude_Sonnet_3.5-blue)  
 ![Made With Cline IDE](https://img.shields.io/badge/Made_With-Cline_IDE-green)
 
-![Application Screenshot](screenshots/v3/1.png)
+ ![alt text](screenshots/v2/1.png)
 
 A Python application for reading and writing NFC tags using the ACR1252U NFC reader. Features a modern PyQt6 graphical interface with comprehensive NFC tag management capabilities, including batch operations and tag locking.
 
