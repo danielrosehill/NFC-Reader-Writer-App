@@ -505,16 +505,16 @@ class NFCReaderGUI(QMainWindow):
         
         self.write_entry = QLineEdit()
         self.write_entry.setMinimumWidth(500)  # Wider to accommodate URLs
-        self.write_entry.setMinimumHeight(50)  # More substantial height
+        self.write_entry.setMinimumHeight(70)  # Increased height for better text visibility
         self.write_entry.setStyleSheet("""
             QLineEdit {
                 font-family: 'Segoe UI';
                 font-size: 16px;
-                padding: 12px;
+                padding: 20px;        /* Increased padding */
                 border: 2px solid #1976d2;
                 border-radius: 8px;
-                margin-bottom: 25px;  /* Increased bottom margin */
-                margin-top: 10px;     /* Added top margin */
+                margin-bottom: 25px;
+                margin-top: 10px;
             }
             QLineEdit:focus {
                 border-color: #1e88e5;
