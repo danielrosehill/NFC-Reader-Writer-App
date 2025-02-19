@@ -496,9 +496,35 @@ class NFCReaderGUI(QMainWindow):
         # URL/Text input
         input_label = QLabel("Enter URL or message to write to tag:")
         input_label.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        
+        # Input container with buttons
+        input_container = QWidget()
+        input_container_layout = QHBoxLayout(input_container)
+        input_container_layout.setContentsMargins(0, 0, 0, 0)
+        
         self.write_entry = QLineEdit()
+        self.write_entry.setMinimumWidth(400)  # Make input field wider
+        
+        # Paste button
+        paste_button = QPushButton()
+        paste_button.setIcon(QIcon.fromTheme("edit-paste"))
+        paste_button.setToolTip("Paste from clipboard")
+        paste_button.clicked.connect(self.paste_to_write_entry)
+        paste_button.setFixedSize(30, 30)
+        
+        # Clear button
+        clear_button = QPushButton()
+        clear_button.setIcon(QIcon.fromTheme("edit-clear"))
+        clear_button.setToolTip("Clear input")
+        clear_button.clicked.connect(self.clear_write_entry)
+        clear_button.setFixedSize(30, 30)
+        
+        input_container_layout.addWidget(self.write_entry)
+        input_container_layout.addWidget(paste_button)
+        input_container_layout.addWidget(clear_button)
+        
         input_layout.addWidget(input_label)
-        input_layout.addWidget(self.write_entry)
+        input_layout.addWidget(input_container)
         
         # Batch writing section
         batch_widget = QWidget()
@@ -1254,6 +1280,19 @@ class NFCReaderGUI(QMainWindow):
         threading.Thread(target=self.batch_write_tags, 
                        args=(text, quantity), 
                        daemon=True).start()
+
+    def paste_to_write_entry(self):
+        """Paste clipboard content into write entry."""
+        clipboard = QApplication.clipboard()
+        text = clipboard.text().strip()
+        if text:
+            self.write_entry.setText(text)
+            self.validate_write_input()
+
+    def clear_write_entry(self):
+        """Clear the write entry field."""
+        self.write_entry.clear()
+        self.validate_write_input()
 
     def validate_write_input(self):
         """Enable write button only if valid URL is present."""
