@@ -40,8 +40,16 @@ class NFCReaderGUI(QMainWindow):
             from smartcard.Exceptions import NoReadersException
             self.readers = readers
             self.toHexString = toHexString
+            
+            # Verify reader availability immediately
+            available_readers = self.readers()
+            if not any("ACR1252" in str(r) for r in available_readers):
+                QMessageBox.warning(self, "Warning", "ACR1252U reader not found. Please connect the reader and restart the application.")
         except ImportError:
             QMessageBox.critical(self, "Error", "pyscard not installed. Please install required packages.")
+            sys.exit(1)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to initialize reader: {str(e)}")
             sys.exit(1)
 
         # Initialize variables
@@ -236,12 +244,17 @@ class NFCReaderGUI(QMainWindow):
         """Setup the read tab interface."""
         layout = QVBoxLayout(self.read_tab)
         
-        # Status section
+        # Status section with enhanced visibility
         status_frame = QFrame()
+        status_frame.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
+        status_frame.setLineWidth(2)
         status_layout = QHBoxLayout(status_frame)
+        
         self.status_label = QLabel("Status: Waiting for reader...")
         self.status_label.setObjectName("status_label")
+        self.status_label.setMinimumHeight(40)  # Increase height for better visibility
         status_layout.addWidget(self.status_label)
+        
         layout.addWidget(status_frame)
         
         # Scan button
@@ -547,11 +560,15 @@ class NFCReaderGUI(QMainWindow):
                 if "ACR1252" in str(r):
                     self.reader = r
                     self.status_signal.emit("Status: Reader connected")
+                    self.statusBar.showMessage("Reader connected and ready")
                     return
 
             self.status_signal.emit("Status: ACR1252U not found")
+            self.statusBar.showMessage("Reader not found - Please connect ACR1252U")
         except Exception as e:
-            self.status_signal.emit(f"Status: Error - {str(e)}")
+            error_msg = f"Status: Error - {str(e)}"
+            self.status_signal.emit(error_msg)
+            self.statusBar.showMessage("Reader error - Check connection")
 
     def connect_with_retry(self) -> Tuple[any, bool]:
         """Try to connect to the card with retries."""
@@ -1144,6 +1161,19 @@ class NFCReaderGUI(QMainWindow):
         if not text:
             QMessageBox.critical(self, "Error", "Please enter text to write")
             return
+            
+        # Validate URL format if it looks like a URL
+        if any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
+            try:
+                if not text.startswith(('http://', 'https://')):
+                    text = 'https://' + text.lstrip('www.')
+                # Basic URL validation
+                if not re.match(r'^https?://[^\s/$.?#].[^\s]*$', text):
+                    raise ValueError("Invalid URL format")
+                self.write_entry.setText(text)  # Update with normalized URL
+            except ValueError:
+                QMessageBox.warning(self, "Warning", "The URL format appears to be invalid. Please check and try again.")
+                return
             
         quantity = self.quantity_spinbox.value()
         if quantity < 1:
