@@ -229,6 +229,7 @@ class NFCReaderGUI(QMainWindow):
         self.tab_widget.setTabEnabled(0, True)  # Explicitly enable Read tab
         self.tab_widget.setTabEnabled(1, True)  # Explicitly enable Write tab
         layout.addWidget(self.tab_widget)
+ 
         
         # Create tabs
         self.read_tab = QWidget()
