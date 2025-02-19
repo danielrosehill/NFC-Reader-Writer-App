@@ -80,6 +80,10 @@ class NFCReaderGUI(QMainWindow):
         self.queue_timer.start(100)
 
         # Apply light theme by default
+        # Create status bar
+        self.statusBar = self.statusBar()
+        self.statusBar.showMessage("Ready")
+        
         self.apply_light_theme()
 
     def apply_light_theme(self):
