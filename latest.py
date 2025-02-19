@@ -1060,47 +1060,47 @@ class NFCReaderGUI(QMainWindow):
                             # Update URL label and try to open web URLs
                             self.url_signal.emit(url)
                             if url.startswith(("http://", "https://")):
-                                # Try to open URL directly without validation for local addresses
-                                if re.match(r'^https?://(?:localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', url):
-                                    self.log_signal.emit("Debug", "Local URL detected - skipping validation")
-                                    
-                                    # Try to open in browser
-                                    methods = [
-                                        (['xdg-open', '--new-window', url], "System default browser"),
-                                        (['firefox', '--new-window', url], "Firefox"),
-                                        (['xdg-open', url], "System default browser"),
-                                        (['firefox', '--no-remote', url], "Firefox"),
-                                        (['google-chrome', '--no-sandbox', url], "Chrome"),
-                                        (['chromium', '--no-sandbox', url], "Chromium"),
-                                        (['sensible-browser', url], "Default browser (Debian/Ubuntu)"),
-                                    ]
-                                    
-                                    success = False
-                                    for cmd, method in methods:
-                                        try:
-                                            self.log_signal.emit("Browser", f"Attempting to open URL with {method}")
-                                            result = subprocess.run(
-                                                cmd, 
-                                                capture_output=True, 
-                                                text=True,
-                                                start_new_session=True
-                                            )
-                                            if result.returncode == 0:
-                                                self.log_signal.emit("Browser", f"Successfully opened URL with {method}")
-                                                success = True
-                                                break
-                                            else:
-                                                self.log_signal.emit("Debug", f"{method} failed: {result.stderr}")
-                                        except FileNotFoundError:
-                                            self.log_signal.emit("Debug", f"{method} not found, trying next method")
-                                            continue
-                                        except Exception as e:
-                                            self.log_signal.emit("Debug", f"{method} error: {str(e)}")
-                                            continue
-                                    
-                                    if not success:
-                                        self.log_signal.emit("Error", "Failed to open URL with any available browser")
-                                
+                                try:
+                                    # Try to open URL directly without validation for local addresses
+                                    if re.match(r'^https?://(?:localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', url):
+                                        self.log_signal.emit("Debug", "Local URL detected - skipping validation")
+                                        
+                                        # Try to open in browser
+                                        methods = [
+                                            (['xdg-open', '--new-window', url], "System default browser"),
+                                            (['firefox', '--new-window', url], "Firefox"),
+                                            (['xdg-open', url], "System default browser"),
+                                            (['firefox', '--no-remote', url], "Firefox"),
+                                            (['google-chrome', '--no-sandbox', url], "Chrome"),
+                                            (['chromium', '--no-sandbox', url], "Chromium"),
+                                            (['sensible-browser', url], "Default browser (Debian/Ubuntu)"),
+                                        ]
+                                        
+                                        success = False
+                                        for cmd, method in methods:
+                                            try:
+                                                self.log_signal.emit("Browser", f"Attempting to open URL with {method}")
+                                                result = subprocess.run(
+                                                    cmd, 
+                                                    capture_output=True, 
+                                                    text=True,
+                                                    start_new_session=True
+                                                )
+                                                if result.returncode == 0:
+                                                    self.log_signal.emit("Browser", f"Successfully opened URL with {method}")
+                                                    success = True
+                                                    break
+                                                else:
+                                                    self.log_signal.emit("Debug", f"{method} failed: {result.stderr}")
+                                            except FileNotFoundError:
+                                                self.log_signal.emit("Debug", f"{method} not found, trying next method")
+                                                continue
+                                            except Exception as e:
+                                                self.log_signal.emit("Debug", f"{method} error: {str(e)}")
+                                                continue
+                                        
+                                        if not success:
+                                            self.log_signal.emit("Error", "Failed to open URL with any available browser")
                                 except Exception as e:
                                     self.log_signal.emit("Debug", f"Browser open error: {str(e)}")
                         elif record_type_bytes == b'T' or (len(record_type) == 1 and record_type[0] == 0x54):  # Text Record
