@@ -47,9 +47,9 @@ class NFCReaderGUI(QMainWindow):
             self.toHexString = toHexString
             
             # Verify reader availability immediately
-            available_readers = self.readers()
-            if not any("ACR1252" in str(r) for r in available_readers):
-                QMessageBox.warning(self, "Warning", "ACR1252U reader not found. Please connect the reader and restart the application.")
+            self.available_readers = self.readers()
+            if not self.available_readers:
+                QMessageBox.warning(self, "Warning", "No NFC readers found. Please connect a reader and restart the application.")
         except ImportError:
             QMessageBox.critical(self, "Error", "pyscard not installed. Please install required packages.")
             sys.exit(1)
@@ -698,15 +698,35 @@ class NFCReaderGUI(QMainWindow):
             self.reader = None
             
             for r in available_readers:
-                if "ACR1252" in str(r):
-                    self.reader = r
-                    reader_id = str(r).split(" ")[0]  # Get the first part of reader string
-                    self.status_signal.emit(f"Status: Reader connected ({reader_id})")
-                    self.statusBar.showMessage(f"Reader {reader_id} connected and ready")
-                    return
+                # Get reader details
+                reader_str = str(r)
+                reader_id = reader_str.split(" ")[0]
+                
+                # Known reader models and their capabilities
+                reader_models = {
+                    "ACR1252": "ACR1252U",
+                    "ACR122": "ACR122U",
+                    "ACS": "ACS Reader",
+                    "SCM": "SCM Reader",
+                    "OMNIKEY": "HID Omnikey",
+                    "Sony": "Sony RC-S380",
+                    "PN53": "PN532"
+                }
+                
+                # Find matching reader model
+                reader_model = "Generic NFC Reader"
+                for model_id, model_name in reader_models.items():
+                    if model_id in reader_str:
+                        reader_model = model_name
+                        break
+                
+                self.reader = r
+                self.status_signal.emit(f"Status: {reader_model} connected ({reader_id})")
+                self.statusBar.showMessage(f"{reader_model} {reader_id} connected and ready")
+                return
 
-            self.status_signal.emit("Status: ACR1252U not found")
-            self.statusBar.showMessage("Reader not found - Please connect ACR1252U")
+            self.status_signal.emit("Status: No NFC reader found")
+            self.statusBar.showMessage("Reader not found - Please connect an NFC reader")
         except Exception as e:
             error_msg = f"Status: Error - {str(e)}"
             self.status_signal.emit(error_msg)
