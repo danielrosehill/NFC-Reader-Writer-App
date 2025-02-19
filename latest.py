@@ -1212,7 +1212,12 @@ class NFCReaderGUI(QMainWindow):
 
         text = self.write_entry.text().strip()
         if not text:
-            QMessageBox.critical(self, "Error", "Please enter a URL or message to write to the tag")
+            QMessageBox.critical(self, "Error", "Please enter a URL to write to the tag")
+            return
+            
+        # Validate that input is a URL
+        if not any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
+            QMessageBox.critical(self, "Error", "Only URLs are allowed. Please enter a valid URL starting with http://, https://, or www.")
             return
             
         # Validate URL format if it looks like a URL
@@ -1274,7 +1279,7 @@ class NFCReaderGUI(QMainWindow):
                     if uid != last_uid:  # Only write to new tags
                         last_uid = uid
                         self.update_tag_status(True)  # Update status when tag detected
-                        self.write_status_signal.emit(f"Writing to tag {uid}...")
+                        self.write_status_signal.emit(f"Write to tag {uid}...")
                         
                         # Write the data
                         text_bytes = list(text.encode('utf-8'))
