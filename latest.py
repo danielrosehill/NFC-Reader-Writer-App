@@ -310,17 +310,18 @@ class NFCReaderGUI(QMainWindow):
                 border-radius: 4px;
             }
         """)
-        self.copy_url_button = QPushButton("📋 Copy")
+        self.copy_url_button = QPushButton("📋")
         self.copy_url_button.setToolTip("Copy URL to clipboard")
         self.copy_url_button.clicked.connect(self.copy_detected_url)
-        self.copy_url_button.setFixedSize(80, 30)
+        self.copy_url_button.setFixedSize(40, 40)
         self.copy_url_button.setStyleSheet("""
             QPushButton { 
                 color: #1976d2;
                 background-color: white;
                 border: 1px solid #1976d2;
-                border-radius: 4px;
-                font-size: 13px;
+                border-radius: 20px;
+                font-size: 20px;
+                padding: 0;
             }
             QPushButton:hover {
                 background-color: #e3f2fd;
