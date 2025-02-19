@@ -566,40 +566,104 @@ class NFCReaderGUI(QMainWindow):
     def connect_with_retry(self) -> Tuple[any, bool]:
         """Try to connect to the card with retries."""
         current_time = time.time()
-        if current_time - self.last_connection_time < 0.2:
+        if current_time - self.last_connection_time < 0.1:  # Reduced debounce time
             return None, False
             
         self.last_connection_time = current_time
-        connection = self.reader.createConnection()
         
-        for attempt in range(3):
-            for protocol in ['T1', 'T0', None]:
+        try:
+            connection = self.reader.createConnection()
+        except Exception as e:
+            self.log_signal.emit("Error", f"Failed to create connection: {str(e)}")
+            return None, False
+        
+        # Try different protocols with retries
+        for attempt in range(5):  # Increased retry attempts
+            for protocol in ['T1', 'T0', 'T=1', 'T=0', None]:
                 try:
                     if protocol:
-                        connection.connect(cardProtocol=protocol)
+                        if protocol.startswith('T='):
+                            connection.connect(protocol=protocol)
+                        else:
+                            connection.connect(cardProtocol=protocol)
                     else:
                         connection.connect()
-                    return connection, True
-                except:
+                        
+                    # Verify connection with GET_UID command
+                    try:
+                        response, sw1, sw2 = connection.transmit(self.GET_UID)
+                        if sw1 == 0x90:
+                            self.log_signal.emit("Debug", f"Connected with protocol: {protocol}")
+                            return connection, True
+                    except:
+                        # If UID check fails, connection might not be stable
+                        continue
+                        
+                except Exception as e:
+                    if attempt == 4:  # Only log on last attempt
+                        self.log_signal.emit("Debug", f"Connection attempt failed with {protocol}: {str(e)}")
                     time.sleep(0.1 * (attempt + 1))
-        
+                    
+                try:
+                    connection.disconnect()
+                except:
+                    pass
+                    
+        self.log_signal.emit("Debug", "All connection attempts failed")
         return None, False
 
     def read_tag_memory(self, connection) -> List[int]:
         """Read NTAG213 memory pages."""
         all_data = []
+        
+        # First verify tag presence with UID check
+        try:
+            response, sw1, sw2 = connection.transmit(self.GET_UID)
+            if sw1 != 0x90:
+                self.log_signal.emit("Error", f"Tag presence check failed: SW1={sw1:02X} SW2={sw2:02X}")
+                return []
+        except Exception as e:
+            self.log_signal.emit("Error", f"UID check failed: {str(e)}")
+            return []
+            
+        # Read capability container (CC) first
+        try:
+            cc_cmd = self.READ_PAGE + [3, 0x04]
+            response, sw1, sw2 = connection.transmit(cc_cmd)
+            if sw1 == 0x90:
+                self.log_signal.emit("Debug", f"CC: {self.toHexString(response)}")
+            else:
+                self.log_signal.emit("Error", f"CC read failed: SW1={sw1:02X} SW2={sw2:02X}")
+                return []
+        except Exception as e:
+            self.log_signal.emit("Error", f"CC read error: {str(e)}")
+            return []
+            
         # NTAG213 has pages 4-39 available for user data
-        for page in range(4, 40):  # Read all available user pages
+        for page in range(4, 40):
             try:
                 read_cmd = self.READ_PAGE + [page, 0x04]  # Read 4 bytes
                 response, sw1, sw2 = connection.transmit(read_cmd)
+                
                 if sw1 == 0x90:
                     all_data.extend(response)
                     self.log_signal.emit("Debug", f"Page {page}: {self.toHexString(response)}")
                 else:
-                    break  # Stop if we hit an error or end of memory
-            except:
+                    self.log_signal.emit("Debug", f"Read stopped at page {page}: SW1={sw1:02X} SW2={sw2:02X}")
+                    break
+                    
+                # Check for end of NDEF message
+                if len(response) >= 4 and response[0] == 0xFE:
+                    self.log_signal.emit("Debug", "Found NDEF terminator, stopping read")
+                    break
+                    
+            except Exception as e:
+                self.log_signal.emit("Error", f"Error reading page {page}: {str(e)}")
                 break
+                
+        if not all_data:
+            self.log_signal.emit("Error", "No data read from tag")
+            
         return all_data
 
     def on_tab_changed(self, index):
