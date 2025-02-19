@@ -300,8 +300,8 @@ class NFCReaderGUI(QMainWindow):
         self.log_text.setReadOnly(True)
         self.log_text.setFont(QFont("Segoe UI", 10))
         self.log_text.setStyleSheet("""
-            QTextEdit {
-                font-family: 'Segoe UI';
+            QTextEdit, QTextEdit * {
+                font-family: 'Segoe UI' !important;
                 line-height: 1.6;
                 padding: 10px;
                 background-color: #FFFFFF;
