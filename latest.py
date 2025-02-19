@@ -1137,72 +1137,27 @@ class NFCReaderGUI(QMainWindow):
                             if url.startswith("tel:") and not url_content.replace("+","").replace("-","").replace(".","").isdigit():
                                 self.log_signal.emit("Debug", "Converting invalid tel: URL to http://")
                                 url = "http://" + url_content
-                            self.log_signal.emit("Debug", f"URL prefix: {prefix}")
-                            self.log_signal.emit("Debug", f"URL content: {bytes(content_bytes).decode('utf-8')}")
-                            self.log_signal.emit("URL Detected", f"Complete URL: {url}")
+                            self.log_signal.emit("URL Detected", f"Found URL: {url}")
                             self.url_signal.emit(url)
+                            
+                            # Try to open URL in browser
+                            if url.startswith(("http://", "https://")):
+                                try:
+                                    subprocess.Popen(['xdg-open', url], start_new_session=True)
+                                    self.log_signal.emit("System", "Opening URL in browser")
+                                except Exception as e:
+                                    self.log_signal.emit("Error", f"Failed to open URL: {str(e)}")
                             
                             # Handle special URL types
                             if url.startswith("tel:"):
-                                # Validate phone numbers (allow +, -, ., and digits)
                                 if not url_content.replace("+","").replace("-","").replace(".","").isdigit():
-                                    self.log_signal.emit("Debug", "Invalid tel: URL format, converting to http://")
                                     url = "http://" + url_content
-                                else:
-                                    self.log_signal.emit("URL Detected", f"Valid tel: URL: {url}")
                             elif url.startswith("mailto:"):
-                                # Basic email format validation
                                 if not re.match(r'^[^@]+@[^@]+\.[^@]+$', url_content):
-                                    self.log_signal.emit("Debug", "Invalid mailto: URL format, converting to http://")
                                     url = "http://" + url_content
-                                else:
-                                    self.log_signal.emit("URL Detected", f"Valid mailto: URL: {url}")
                             
                             # Update URL label and try to open web URLs
                             self.url_signal.emit(url)
-                            if url.startswith(("http://", "https://")):
-                                try:
-                                    # Try to open URL directly without validation for local addresses
-                                    if re.match(r'^https?://(?:localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', url):
-                                        self.log_signal.emit("Debug", "Local URL detected - skipping validation")
-                                        
-                                        # Try to open in browser with SSL verification disabled for local URLs
-                                        methods = [
-                                            (['google-chrome', '--no-sandbox', '--ignore-certificate-errors', url], "Chrome"),
-                                            (['google-chrome-stable', '--no-sandbox', '--ignore-certificate-errors', url], "Chrome Stable"),
-                                            (['xdg-open', url], "System default browser"),
-                                            (['chromium', '--no-sandbox', '--ignore-certificate-errors', url], "Chromium"),
-                                            (['firefox', '--no-remote', '--ignore-ssl-errors=yes', url], "Firefox"),
-                                            (['sensible-browser', url], "Default browser (Debian/Ubuntu)"),
-                                        ]
-                                        
-                                        success = False
-                                        for cmd, method in methods:
-                                            try:
-                                                self.log_signal.emit("Browser", f"Attempting to open URL with {method}")
-                                                result = subprocess.run(
-                                                    cmd, 
-                                                    capture_output=True, 
-                                                    text=True,
-                                                    start_new_session=True
-                                                )
-                                                if result.returncode == 0:
-                                                    self.log_signal.emit("Browser", f"Successfully opened URL with {method}")
-                                                    success = True
-                                                    break
-                                                else:
-                                                    self.log_signal.emit("Debug", f"{method} failed: {result.stderr}")
-                                            except FileNotFoundError:
-                                                self.log_signal.emit("Debug", f"{method} not found, trying next method")
-                                                continue
-                                            except Exception as e:
-                                                self.log_signal.emit("Debug", f"{method} error: {str(e)}")
-                                                continue
-                                        
-                                        if not success:
-                                            self.log_signal.emit("Error", "Failed to open URL with any available browser")
-                                except Exception as e:
-                                    self.log_signal.emit("Debug", f"Browser open error: {str(e)}")
                         elif record_type_bytes == b'T' or (len(record_type) == 1 and record_type[0] == 0x54):  # Text Record
                             # First byte contains text info
                             text_info = data[offset]
