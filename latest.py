@@ -508,11 +508,11 @@ class NFCReaderGUI(QMainWindow):
         self.write_entry.setStyleSheet("""
             QLineEdit {
                 font-family: 'Segoe UI';
-                font-size: 16px;  # Slightly larger text
+                font-size: 16px;
                 padding: 12px;
                 border: 2px solid #1976d2;
                 border-radius: 8px;
-                margin-bottom: 10px;  # Add some spacing below
+                margin-bottom: 10px;
             }
             QLineEdit:focus {
                 border-color: #1e88e5;
@@ -533,8 +533,8 @@ class NFCReaderGUI(QMainWindow):
                 border-radius: 8px;
                 padding: 12px;
                 font-family: 'Segoe UI';
-                font-size: 16px;  # Larger text
-                margin-right: 10px;  # Add spacing between buttons
+                font-size: 16px;
+                margin-right: 10px;
             }
             QPushButton:hover {
                 background-color: #1e88e5;
@@ -558,7 +558,7 @@ class NFCReaderGUI(QMainWindow):
                 border-radius: 8px;
                 padding: 12px;
                 font-family: 'Segoe UI';
-                font-size: 16px;  # Larger text
+                font-size: 16px;
             }
             QPushButton:hover {
                 background-color: #e53935;
