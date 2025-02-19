@@ -1168,11 +1168,11 @@ class NFCReaderGUI(QMainWindow):
         
         # Format based on message type
         if title in ["Debug", "Error", "System"]:
-            # Technical messages in monospace
-            formatted_msg = f'<span style="color: #666666">[{timestamp}]</span> <span style="font-family: Segoe UI; color: {self._get_title_color(title)}">[{title}]</span> <span style="font-family: Segoe UI">{message}</span>'
+            # All messages in Segoe UI
+            formatted_msg = f'<div style="font-family: Segoe UI"><span style="color: #666666">[{timestamp}]</span> <span style="color: {self._get_title_color(title)}">[{title}]</span> {message}</div>'
         else:
-            # User-friendly messages in regular font
-            formatted_msg = f'<span style="color: #666666">[{timestamp}]</span> <span style="font-family: Segoe UI; color: {self._get_title_color(title)}">[{title}]</span> <span style="font-family: Segoe UI">{message}</span>'
+            # All messages in Segoe UI
+            formatted_msg = f'<div style="font-family: Segoe UI"><span style="color: #666666">[{timestamp}]</span> <span style="color: {self._get_title_color(title)}">[{title}]</span> {message}</div>'
             
         self.log_text.append(formatted_msg)
         self.log_text.verticalScrollBar().setValue(
