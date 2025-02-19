@@ -702,23 +702,43 @@ class NFCReaderGUI(QMainWindow):
                 reader_str = str(r)
                 reader_id = reader_str.split(" ")[0]
                 
-                # Known reader models and their capabilities
+                # Known NFC reader models and their capabilities
                 reader_models = {
                     "ACR1252": "ACR1252U",
                     "ACR122": "ACR122U",
-                    "ACS": "ACS Reader",
-                    "SCM": "SCM Reader",
+                    "ACS ACR": "ACS Reader",  # More specific ACS match
+                    "SCM Microsystems": "SCM Reader",
                     "OMNIKEY": "HID Omnikey",
                     "Sony": "Sony RC-S380",
                     "PN53": "PN532"
                 }
                 
+                # List of known non-NFC readers to ignore
+                ignored_readers = [
+                    "Yubico",
+                    "YubiKey",
+                    "Smart Card Reader",  # Generic smart card readers
+                    "USB Smart Card Reader",
+                    "Common Access Card",
+                    "CAC Reader",
+                    "PIV Reader",
+                    "EMV Reader"
+                ]
+                
+                # Check if this is a reader we should ignore
+                if any(ignored in reader_str for ignored in ignored_readers):
+                    continue
+                
                 # Find matching reader model
-                reader_model = "Generic NFC Reader"
+                reader_model = None
                 for model_id, model_name in reader_models.items():
                     if model_id in reader_str:
                         reader_model = model_name
                         break
+                
+                # Only proceed if we found a known NFC reader model
+                if reader_model is None:
+                    continue
                 
                 self.reader = r
                 self.status_signal.emit(f"Status: {reader_model} connected ({reader_id})")
