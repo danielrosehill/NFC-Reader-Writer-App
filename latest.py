@@ -62,6 +62,8 @@ class NFCReaderGUI(QMainWindow):
         self.scan_thread = None
         self.tag_queue = queue.Queue()
         self.last_connection_time = 0
+        self.last_activity_time = 0
+        self.scan_timeout = 30  # 30 seconds timeout
         self.reader = None
 
         # Setup UI
@@ -882,7 +884,7 @@ class NFCReaderGUI(QMainWindow):
             self.scanning = True
             self.scan_button.setText("Stop Scanning")
             self.scan_button.setStyleSheet("background-color: #c62828;")  # Red for stop
-            self.log_signal.emit("System", "Started scanning for tags")
+            self.log_signal.emit("System", f"Started scanning for tags (will timeout after {self.scan_timeout} seconds of inactivity)")
             self.scan_thread = threading.Thread(target=self.scan_loop, daemon=True)
             self.scan_thread.start()
         else:
@@ -894,8 +896,16 @@ class NFCReaderGUI(QMainWindow):
     def scan_loop(self):
         """Continuous scanning loop."""
         last_uid = None
+        self.last_activity_time = time.time()
         
         while self.scanning:
+            # Check for timeout
+            if time.time() - self.last_activity_time > self.scan_timeout:
+                self.log_signal.emit("System", f"Scanning stopped after {self.scan_timeout} seconds of inactivity")
+                self.scanning = False
+                # Update UI from main thread
+                self.status_signal.emit("Status: Scanning timed out - No recent activity")
+                break
             try:
                 if self.reader:
                     connection, connected = self.connect_with_retry()
@@ -911,6 +921,7 @@ class NFCReaderGUI(QMainWindow):
                         # Only process if it's a new tag
                         if uid != last_uid:
                             last_uid = uid
+                            self.last_activity_time = time.time()  # Update activity timestamp
                             self.log_signal.emit("New tag detected", f"UID: {uid}")
                             self.update_tag_status(True)  # Update status when tag detected
                             
