@@ -248,12 +248,38 @@ class NFCReaderGUI(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
         
-        # Create tab widget
+        # Create tab widget with modern styling
         self.tab_widget = QTabWidget()
         self.tab_widget.currentChanged.connect(self.on_tab_changed)
-        self.tab_widget.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # Ensure tab widget can receive focus
-        self.tab_widget.setTabEnabled(0, True)  # Explicitly enable Read tab
-        self.tab_widget.setTabEnabled(1, True)  # Explicitly enable Write tab
+        self.tab_widget.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.tab_widget.setTabEnabled(0, True)
+        self.tab_widget.setTabEnabled(1, True)
+        self.tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                background: white;
+                margin-top: -1px;
+            }
+            QTabBar::tab {
+                padding: 16px 40px;
+                margin-right: 4px;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                border: 1px solid #e0e0e0;
+                border-bottom: none;
+                background: #f5f5f5;
+                font-size: 14px;
+            }
+            QTabBar::tab:selected {
+                background: white;
+                border-bottom: 2px solid #1976d2;
+                font-weight: bold;
+            }
+            QTabBar::tab:hover:!selected {
+                background: #eeeeee;
+            }
+        """)
         layout.addWidget(self.tab_widget)
  
         
@@ -278,11 +304,18 @@ class NFCReaderGUI(QMainWindow):
         """Setup the read tab interface."""
         layout = QVBoxLayout(self.read_tab)
         
-        # Status section with enhanced visibility
+        # Status section with modern card-like design
         status_frame = QFrame()
-        status_frame.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
-        status_frame.setLineWidth(2)
+        status_frame.setStyleSheet("""
+            QFrame {
+                background: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 8px;
+            }
+        """)
         status_layout = QHBoxLayout(status_frame)
+        status_layout.setContentsMargins(16, 16, 16, 16)
         
         self.status_label = QLabel("Status: Waiting for reader...")
         self.status_label.setObjectName("status_label")
@@ -364,16 +397,34 @@ class NFCReaderGUI(QMainWindow):
         """)
         log_layout.addWidget(self.log_text)
         
-        # Button container
+        # Button container with improved styling
         button_container = QWidget()
         button_layout = QHBoxLayout(button_container)
-        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setContentsMargins(0, 8, 0, 0)
+        button_layout.setSpacing(12)
         
-        # Copy and Clear buttons
-        self.copy_button = QPushButton("Copy Log")
+        # Copy and Clear buttons with icons and tooltips
+        self.copy_button = QPushButton("📋 Copy Log")
         self.copy_button.clicked.connect(self.copy_log)
-        self.clear_button = QPushButton("Clear Log")
+        self.copy_button.setToolTip("Copy log contents to clipboard")
+        self.copy_button.setStyleSheet("""
+            QPushButton {
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: 500;
+            }
+        """)
+        
+        self.clear_button = QPushButton("🗑️ Clear Log")
         self.clear_button.clicked.connect(self.clear_log)
+        self.clear_button.setToolTip("Clear all log entries")
+        self.clear_button.setStyleSheet("""
+            QPushButton {
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: 500;
+            }
+        """)
         
         button_layout.addWidget(self.copy_button)
         button_layout.addWidget(self.clear_button)
@@ -545,9 +596,11 @@ class NFCReaderGUI(QMainWindow):
         input_group = QGroupBox("Tag Content")
         input_layout = QVBoxLayout(input_group)
         
-        # URL input
+        # URL input with tooltip
         input_label = QLabel("Enter URL to write to tag:")
-        input_label.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        input_label.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
+        input_label.setStyleSheet("color: #1976d2; margin-bottom: 8px;")
+        input_label.setToolTip("Enter a complete URL starting with http://, https://, or www.")
         
         # Add validation label
         self.validation_label = QLabel("")
@@ -667,9 +720,26 @@ class NFCReaderGUI(QMainWindow):
         
         layout.addWidget(options_group)
         
-        # Combined Progress & Status section
+        # Combined Progress & Status section with enhanced visibility
         status_group = QGroupBox("Status & Progress")
+        status_group.setStyleSheet("""
+            QGroupBox {
+                background: white;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                margin-top: 2em;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+                color: #1976d2;
+            }
+        """)
         status_layout = QHBoxLayout(status_group)
+        status_layout.setContentsMargins(16, 24, 16, 16)
+        status_layout.setSpacing(16)
         
         # Progress label
         self.progress_label = QLabel("")
