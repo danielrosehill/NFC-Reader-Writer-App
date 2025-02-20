@@ -592,6 +592,24 @@ class NFCReaderGUI(QMainWindow):
         """Setup the write tab interface."""
         layout = QVBoxLayout(self.write_tab)
         
+        # Quick Write section for single tags
+        quick_write_group = QGroupBox("Quick Write")
+        quick_write_layout = QHBoxLayout(quick_write_group)
+        
+        self.quick_write_button = QPushButton("Quick Write Single Tag")
+        self.quick_write_button.setToolTip("Quickly write the current URL to a single tag")
+        self.quick_write_button.clicked.connect(lambda: self.batch_write_tags(self.write_entry.text().strip(), 1))
+        self.quick_write_button.setEnabled(False)
+        self.quick_write_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                padding: 12px 24px;
+            }
+        """)
+        
+        quick_write_layout.addWidget(self.quick_write_button)
+        layout.addWidget(quick_write_group)
+        
         # Input section
         input_group = QGroupBox("Tag Content")
         input_layout = QVBoxLayout(input_group)
@@ -615,9 +633,15 @@ class NFCReaderGUI(QMainWindow):
         input_container_layout = QHBoxLayout(input_container)
         input_container_layout.setContentsMargins(0, 0, 0, 0)
         
-        self.write_entry = QLineEdit()
-        self.write_entry.setMinimumWidth(500)  # Wider to accommodate URLs
-        self.write_entry.setMinimumHeight(40)  # Standard height for text input
+        # Recent URLs dropdown
+        self.recent_urls = []
+        self.url_combo = QComboBox()
+        self.url_combo.setMinimumWidth(500)
+        self.url_combo.setMinimumHeight(40)
+        self.url_combo.setEditable(True)
+        self.url_combo.setInsertPolicy(QComboBox.InsertPolicy.InsertAtTop)
+        self.url_combo.currentTextChanged.connect(self.validate_write_input)
+        self.write_entry = self.url_combo.lineEdit()
         self.write_entry.setStyleSheet("""
             QLineEdit {
                 font-family: 'Segoe UI';
@@ -1613,6 +1637,9 @@ class NFCReaderGUI(QMainWindow):
         """Validate URL input and provide feedback."""
         text = self.write_entry.text().strip()
         
+        # Enable/disable quick write button along with main write button
+        self.quick_write_button.setEnabled(False)
+        
         # Update character count with more visible feedback
         remaining = 137 - len(text)  # NTAG213 URL capacity
         if remaining < 0:
@@ -1661,8 +1688,31 @@ class NFCReaderGUI(QMainWindow):
                 except Exception:
                     url_valid = False
                 
+            # Additional validation for inventory system URLs
+            inventory_valid = bool(re.match(r'^https?://homebox\.residencejlm\.com/item/[\w-]+$', text))
+            
             if url_valid:
                 self.write_button.setEnabled(True)
+                self.quick_write_button.setEnabled(True)
+                
+                if inventory_valid:
+                    self.validation_label.setStyleSheet("""
+                        color: #4CAF50;
+                        font-weight: bold;
+                        background-color: #E8F5E9;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                    """)
+                    self.validation_label.setText("✓ Valid Inventory System URL")
+                else:
+                    self.validation_label.setStyleSheet("""
+                        color: #FF9800;
+                        font-weight: bold;
+                        background-color: #FFF3E0;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                    """)
+                    self.validation_label.setText("✓ Valid URL format (Non-inventory URL)")
                 self.validation_label.setStyleSheet("""
                     color: #4CAF50;
                     font-weight: bold;
@@ -1689,6 +1739,44 @@ class NFCReaderGUI(QMainWindow):
         # Disable write button if text is too long
         if remaining < 0:
             self.write_button.setEnabled(False)
+
+    def show_write_success(self):
+        """Show a temporary success animation."""
+        success_label = QLabel("✓", self)
+        success_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                background-color: #4CAF50;
+                border-radius: 25px;
+                padding: 15px;
+                font-size: 24px;
+            }
+        """)
+        success_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        success_label.setFixedSize(50, 50)
+        
+        # Position in center of window
+        success_label.move(
+            self.width() // 2 - success_label.width() // 2,
+            self.height() // 2 - success_label.height() // 2
+        )
+        
+        success_label.show()
+        
+        # Fade out animation
+        def fade_out():
+            success_label.setStyleSheet("""
+                QLabel {
+                    color: transparent;
+                    background-color: transparent;
+                    border-radius: 25px;
+                    padding: 15px;
+                    font-size: 24px;
+                }
+            """)
+            QTimer.singleShot(200, success_label.deleteLater)
+            
+        QTimer.singleShot(500, fade_out)
 
     def update_tag_status(self, detected: bool, locked: bool = False):
         """Update the tag status indicator and label."""
@@ -1819,6 +1907,17 @@ class NFCReaderGUI(QMainWindow):
                                 raise Exception("Failed to lock tag")
                         
                         tags_written += 1
+                        
+                        # Store URL in recent list if not already present
+                        if text not in self.recent_urls:
+                            self.recent_urls.insert(0, text)
+                            self.recent_urls = self.recent_urls[:10]  # Keep last 10
+                            self.url_combo.clear()
+                            self.url_combo.addItems(self.recent_urls)
+                        
+                        # Show success animation
+                        self.show_write_success()
+                        
                         self.progress_signal.emit(
                             f"Progress: {tags_written}/{quantity} tags written")
                         
