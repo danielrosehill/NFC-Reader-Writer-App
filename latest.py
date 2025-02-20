@@ -1304,15 +1304,15 @@ class NFCReaderGUI(QMainWindow):
                                 # Try to open in browser without reachability check
                                 try:
                                     # Try google-chrome first with timeout
-                                        process = subprocess.Popen(['google-chrome', url], 
-                                                                start_new_session=True)
-                                        try:
-                                            process.wait(timeout=3)
-                                            self.log_signal.emit("System", "Opening URL in Chrome")
-                                        except subprocess.TimeoutExpired:
-                                            # Process started but didn't exit - this is normal
-                                            self.log_signal.emit("System", "Opening URL in Chrome")
-                                    except FileNotFoundError:
+                                    process = subprocess.Popen(['google-chrome', url], 
+                                                            start_new_session=True)
+                                    try:
+                                        process.wait(timeout=3)
+                                        self.log_signal.emit("System", "Opening URL in Chrome")
+                                    except subprocess.TimeoutExpired:
+                                        # Process started but didn't exit - this is normal
+                                        self.log_signal.emit("System", "Opening URL in Chrome")
+                                except FileNotFoundError:
                                         try:
                                             # Fallback to chrome if google-chrome not found
                                             process = subprocess.Popen(['chrome', url], 
