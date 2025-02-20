@@ -1690,7 +1690,7 @@ class NFCReaderGUI(QMainWindow):
                     url_valid = False
                 
             # Additional validation for inventory system URLs
-            inventory_valid = bool(re.match(r'^https?://homebox\.residencejlm\.com/item/[\w-]+$', text))
+            inventory_valid = bool(re.match(r'^https?://inventory\.example\.com/item/[\w-]+$', text))
             
             if url_valid:
                 self.write_button.setEnabled(True)

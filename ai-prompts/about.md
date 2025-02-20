@@ -6,7 +6,7 @@
 
  This is a real URL from the inventory system. As you can see, they are quite long:
 
- https://homebox.residencejlm.com/item/8ebf2dfe-507f-44a5-acfc-b94d895f1975
+ https://inventory.example.com/item/8ebf2dfe-507f-44a5-acfc-b94d895f1975
 
  Whenever I create tags, I create and lock them simultaneously. I use predominantly ntag 2 and 3, although I'd like this to work with different tags if possible. I currently use the ACR1252U but also have another ACr NFC tag reader and writer.
 
