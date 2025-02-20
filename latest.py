@@ -1301,18 +1301,9 @@ class NFCReaderGUI(QMainWindow):
                             
                             # Try to open URL in Chrome
                             if url.startswith(("http://", "https://")):
-                                # Verify URL is reachable
+                                # Try to open in browser without reachability check
                                 try:
-                                    ctx = ssl.create_default_context()
-                                    ctx.check_hostname = False
-                                    ctx.verify_mode = ssl.CERT_NONE
-                                    
-                                    # Try to connect with a timeout
-                                    urllib.request.urlopen(url, context=ctx, timeout=5)
-                                    
-                                    # URL is reachable, try to open in browser
-                                    try:
-                                        # Try google-chrome first with timeout
+                                    # Try google-chrome first with timeout
                                         process = subprocess.Popen(['google-chrome', url], 
                                                                 start_new_session=True)
                                         try:
