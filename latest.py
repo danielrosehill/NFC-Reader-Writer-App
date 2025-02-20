@@ -472,7 +472,7 @@ class NFCReaderGUI(QMainWindow):
         header_layout.addWidget(icon_label)
         
         # Version info
-        version_label = QLabel("Version 3.0.0")
+        version_label = QLabel("Version 3.2")
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet("font-weight: bold; color: #1976d2; margin: 10px 0;")
         header_layout.addWidget(version_label)
