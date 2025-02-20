@@ -621,37 +621,12 @@ class NFCReaderGUI(QMainWindow):
         input_layout.addWidget(self.validation_label)
         input_layout.addWidget(self.char_count_label)
         
-        # URL Preview section
-        preview_group = QGroupBox("URL Preview")
-        preview_layout = QVBoxLayout(preview_group)
-        
-        self.url_preview = QLabel("")
-        self.url_preview.setStyleSheet("""
-            QLabel {
-                font-family: 'Ubuntu Mono', monospace;
-                font-size: 14px;
-                color: #1976D2;
-                padding: 10px;
-                background-color: #E3F2FD;
-                border-radius: 4px;
-                min-height: 60px;
-            }
-        """)
-        self.url_preview.setWordWrap(True)
-        self.url_preview.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        self.url_preview.setMinimumHeight(60)
-        
+        # Add test URL button next to input
         test_url_button = QPushButton("🔗 Test URL")
         test_url_button.setToolTip("Open URL in browser to test")
         test_url_button.clicked.connect(self.test_url)
         test_url_button.setFixedWidth(120)
-        
-        preview_layout.addWidget(self.url_preview)
-        preview_layout.addWidget(test_url_button, alignment=Qt.AlignmentFlag.AlignRight)
-        
-        input_layout.addSpacing(10)
-        input_layout.addWidget(preview_group)
-        input_layout.addSpacing(10)
+        input_container_layout.addWidget(test_url_button)
         
         # Batch writing section
         batch_widget = QWidget()
@@ -690,16 +665,16 @@ class NFCReaderGUI(QMainWindow):
         
         layout.addWidget(options_group)
         
-        # Progress section
-        progress_group = QGroupBox("Writing Progress")
-        progress_layout = QVBoxLayout(progress_group)
-        self.progress_label = QLabel("")
-        progress_layout.addWidget(self.progress_label)
-        layout.addWidget(progress_group)
+        # Combined Progress & Status section
+        status_group = QGroupBox("Status & Progress")
+        status_layout = QHBoxLayout(status_group)
         
-        # Status section
-        status_group = QGroupBox("Status")
-        status_layout = QVBoxLayout(status_group)
+        # Progress label
+        self.progress_label = QLabel("")
+        status_layout.addWidget(self.progress_label)
+        
+        # Add spacer
+        status_layout.addSpacing(20)
         
         # Tag detection status
         tag_status_widget = QWidget()
@@ -1473,17 +1448,14 @@ class NFCReaderGUI(QMainWindow):
         if text:
             if any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
                 self.write_button.setEnabled(True)
-                self.url_preview.setText(text)
                 self.validation_label.setStyleSheet("color: #4CAF50;")  # Green
                 self.validation_label.setText("✓ Valid URL format")
             else:
                 self.write_button.setEnabled(False)
-                self.url_preview.setText("")
                 self.validation_label.setStyleSheet("color: #F44336;")  # Red
                 self.validation_label.setText("✗ URL must start with http://, https://, or www.")
         else:
             self.write_button.setEnabled(False)
-            self.url_preview.setText("")
             self.validation_label.setText("")
             
         # Update preview styling based on length
