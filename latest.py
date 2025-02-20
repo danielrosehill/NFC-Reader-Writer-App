@@ -1280,11 +1280,17 @@ class NFCReaderGUI(QMainWindow):
                                 
                             url = prefix + url_content
                             
-                            # Basic URL validation
+                            # Basic URL validation and LAN IP handling
                             if not any(url.startswith(p) for p in ["http://", "https://", "tel:", "mailto:"]):
                                 self.log_signal.emit("Debug", f"Invalid URL format: {url}")
                                 if looks_like_web:
                                     url = "https://" + url_content
+
+                            # Check if URL is a LAN IP address and rewrite https:// to http://
+                            lan_ip_pattern = re.compile(r'^https://(?:10\.|172\.(?:1[6-9]|2[0-9]|3[01])\.|192\.168\.)')
+                            if lan_ip_pattern.match(url):
+                                url = 'http://' + url[8:]  # Replace https:// with http://
+                                self.log_signal.emit("Debug", f"Rewrote LAN IP URL to: {url}")
                             
                             # Additional validation for tel: URLs
                             if url.startswith("tel:") and not url_content.replace("+","").replace("-","").replace(".","").isdigit():
@@ -1500,6 +1506,13 @@ class NFCReaderGUI(QMainWindow):
             try:
                 if not text.startswith(('http://', 'https://')):
                     text = 'https://' + text.lstrip('www.')
+                                    
+                # Check if URL is a LAN IP and rewrite https:// to http://
+                lan_ip_pattern = re.compile(r'^https://(?:10\.|172\.(?:1[6-9]|2[0-9]|3[01])\.|192\.168\.)')
+                if lan_ip_pattern.match(text):
+                    text = 'http://' + text[8:]  # Replace https:// with http://
+                    self.log_signal.emit("Debug", f"Rewrote LAN IP URL to: {text}")
+                                    
                 # Basic URL validation
                 if not re.match(r'^https?://[^\s/$.?#].[^\s]*$', text):
                     raise ValueError("Invalid URL format")
