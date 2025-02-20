@@ -1525,6 +1525,9 @@ class NFCReaderGUI(QMainWindow):
         clipboard = QApplication.clipboard()
         text = clipboard.text().strip()
         if text:
+            # Store original text for comparison
+            original_text = text
+            
             # Try to normalize URL format
             if text.startswith('www.'):
                 text = 'https://' + text
@@ -1536,8 +1539,40 @@ class NFCReaderGUI(QMainWindow):
             self.write_entry.setText(text)
             self.validate_write_input()
             
-            # Provide feedback
-            self.log_signal.emit("System", "URL pasted and normalized")
+            # Show notification with the new URL
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Icon.Information)
+            msg.setWindowTitle("URL Updated")
+            
+            if text != original_text:
+                msg.setText(f"URL normalized and updated:\n{text}")
+                msg.setInformativeText(f"Original text: {original_text}")
+            else:
+                msg.setText(f"URL updated:\n{text}")
+            
+            # Style the message box
+            msg.setStyleSheet("""
+                QMessageBox {
+                    background-color: white;
+                }
+                QPushButton {
+                    padding: 6px 20px;
+                    background-color: #1976d2;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #1565c0;
+                }
+            """)
+            
+            # Auto-close after 2 seconds
+            QTimer.singleShot(2000, msg.close)
+            msg.show()
+            
+            # Also log the change
+            self.log_signal.emit("System", f"URL updated to: {text}")
 
     def clear_write_entry(self):
         """Clear the write entry field."""
