@@ -1313,31 +1313,29 @@ class NFCReaderGUI(QMainWindow):
                                         # Process started but didn't exit - this is normal
                                         self.log_signal.emit("System", "Opening URL in Chrome")
                                 except FileNotFoundError:
+                                    try:
+                                        # Fallback to chrome if google-chrome not found
+                                        process = subprocess.Popen(['chrome', url], 
+                                                                start_new_session=True)
                                         try:
-                                            # Fallback to chrome if google-chrome not found
-                                            process = subprocess.Popen(['chrome', url], 
+                                            process.wait(timeout=3)
+                                            self.log_signal.emit("System", "Opening URL in Chrome")
+                                        except subprocess.TimeoutExpired:
+                                            self.log_signal.emit("System", "Opening URL in Chrome")
+                                    except FileNotFoundError:
+                                        # Last resort fallback to xdg-open
+                                        try:
+                                            process = subprocess.Popen(['xdg-open', url], 
                                                                     start_new_session=True)
                                             try:
                                                 process.wait(timeout=3)
-                                                self.log_signal.emit("System", "Opening URL in Chrome")
+                                                self.log_signal.emit("System", "Opening URL in default browser")
                                             except subprocess.TimeoutExpired:
-                                                self.log_signal.emit("System", "Opening URL in Chrome")
-                                        except FileNotFoundError:
-                                            # Last resort fallback to xdg-open
-                                            try:
-                                                process = subprocess.Popen(['xdg-open', url], 
-                                                                        start_new_session=True)
-                                                try:
-                                                    process.wait(timeout=3)
-                                                    self.log_signal.emit("System", "Opening URL in default browser")
-                                                except subprocess.TimeoutExpired:
-                                                    self.log_signal.emit("System", "Opening URL in default browser")
-                                            except Exception as e:
-                                                self.log_signal.emit("Error", f"Failed to open URL: {str(e)}")
+                                                self.log_signal.emit("System", "Opening URL in default browser")
                                         except Exception as e:
-                                            self.log_signal.emit("Error", f"Failed to open URL in Chrome: {str(e)}")
-                                    except Exception as e:
-                                        self.log_signal.emit("Error", f"Failed to launch Chrome: {str(e)}")
+                                            self.log_signal.emit("Error", f"Failed to open URL: {str(e)}")
+                                except Exception as e:
+                                    self.log_signal.emit("Error", f"Failed to launch Chrome: {str(e)}")
                                 except (urllib.error.URLError, ssl.SSLError) as e:
                                     self.log_signal.emit("Error", f"URL not reachable: {str(e)}")
                                 except Exception as e:
