@@ -1563,7 +1563,7 @@ class NFCReaderGUI(QMainWindow):
                 if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', text):
                     text = 'https://' + text
             
-            self.write_entry.setText(text)
+            self.url_combo.setCurrentText(text)
             self.validate_write_input()
             
             # Show notification with the new URL
@@ -1670,24 +1670,20 @@ class NFCReaderGUI(QMainWindow):
         if text:
             # Check for valid URL format
             url_valid = False
-            if any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
-                try:
-                    # Normalize URL format
-                    if text.startswith('www.'):
-                        text = 'https://' + text
-                    
-                    # Basic URL validation regex
+            try:
+                # Normalize URL format if needed
+                if text.startswith('www.'):
+                    text = 'https://' + text
+                
+                # Basic URL validation - simplified to prevent crashes
+                url_valid = any(text.startswith(prefix) for prefix in ['http://', 'https://'])
+                if url_valid:
+                    # Additional validation only if basic check passes
                     url_pattern = re.compile(
-                        r'^https?://'  # http:// or https://
-                        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-                        r'localhost|'  # localhost...
-                        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-                        r'(?::\d+)?'  # optional port
-                        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-                    
+                        r'^https?://[^\s/$.?#].[^\s]*$', re.IGNORECASE)
                     url_valid = bool(url_pattern.match(text))
-                except Exception:
-                    url_valid = False
+            except Exception:
+                url_valid = False
                 
             # Additional validation for inventory system URLs
             inventory_valid = bool(re.match(r'^https?://inventory\.example\.com/item/[\w-]+$', text))
