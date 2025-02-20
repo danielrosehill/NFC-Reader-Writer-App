@@ -1402,11 +1402,23 @@ class NFCReaderGUI(QMainWindow):
             QMessageBox.critical(self, "Error", "Please enter a URL to write to the tag")
             return
             
-        # Additional validation to prevent accidental writes
+        # Enhanced validation to prevent accidental writes
         if not any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
-            QMessageBox.critical(self, "Error", 
-                "Please enter a valid URL starting with http://, https://, or www.")
-            return
+            result = QMessageBox.warning(
+                self, 
+                "URL Format Warning",
+                "The URL should start with http://, https://, or www.\n\n"
+                "Would you like to automatically add 'https://' to the URL?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            
+            if result == QMessageBox.StandardButton.Yes:
+                text = 'https://' + text
+                self.write_entry.setText(text)
+                self.validate_write_input()
+            else:
+                return
             
         # Validate that input is a URL
         if not any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
@@ -1443,8 +1455,19 @@ class NFCReaderGUI(QMainWindow):
         clipboard = QApplication.clipboard()
         text = clipboard.text().strip()
         if text:
+            # Try to normalize URL format
+            if text.startswith('www.'):
+                text = 'https://' + text
+            elif not text.startswith(('http://', 'https://')):
+                # Check if it looks like a domain
+                if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', text):
+                    text = 'https://' + text
+            
             self.write_entry.setText(text)
             self.validate_write_input()
+            
+            # Provide feedback
+            self.log_signal.emit("System", "URL pasted and normalized")
 
     def clear_write_entry(self):
         """Clear the write entry field."""
@@ -1483,30 +1506,82 @@ class NFCReaderGUI(QMainWindow):
         """Validate URL input and provide feedback."""
         text = self.write_entry.text().strip()
         
-        # Update character count
+        # Update character count with more visible feedback
         remaining = 137 - len(text)  # NTAG213 URL capacity
+        if remaining < 0:
+            self.char_count_label.setStyleSheet("""
+                color: #F44336;
+                font-weight: bold;
+                background-color: #FFEBEE;
+                padding: 4px 8px;
+                border-radius: 4px;
+            """)
+        elif remaining < 20:
+            self.char_count_label.setStyleSheet("""
+                color: #FF9800;
+                font-weight: bold;
+                background-color: #FFF3E0;
+                padding: 4px 8px;
+                border-radius: 4px;
+            """)
+        else:
+            self.char_count_label.setStyleSheet("""
+                color: #666666;
+                padding: 4px 8px;
+            """)
         self.char_count_label.setText(f"Characters remaining: {remaining}")
         
-        # Validate URL format
+        # Enhanced URL validation
         if text:
+            # Check for valid URL format
+            url_valid = False
             if any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
+                try:
+                    # Normalize URL format
+                    if text.startswith('www.'):
+                        text = 'https://' + text
+                    
+                    # Basic URL validation regex
+                    url_pattern = re.compile(
+                        r'^https?://'  # http:// or https://
+                        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+                        r'localhost|'  # localhost...
+                        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+                        r'(?::\d+)?'  # optional port
+                        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+                    
+                    url_valid = bool(url_pattern.match(text))
+                except Exception:
+                    url_valid = False
+                
+            if url_valid:
                 self.write_button.setEnabled(True)
-                self.validation_label.setStyleSheet("color: #4CAF50;")  # Green
+                self.validation_label.setStyleSheet("""
+                    color: #4CAF50;
+                    font-weight: bold;
+                    background-color: #E8F5E9;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                """)
                 self.validation_label.setText("✓ Valid URL format")
             else:
                 self.write_button.setEnabled(False)
-                self.validation_label.setStyleSheet("color: #F44336;")  # Red
-                self.validation_label.setText("✗ URL must start with http://, https://, or www.")
+                self.validation_label.setStyleSheet("""
+                    color: #F44336;
+                    font-weight: bold;
+                    background-color: #FFEBEE;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                """)
+                self.validation_label.setText("✗ Invalid URL format - Must start with http://, https://, or www.")
         else:
             self.write_button.setEnabled(False)
             self.validation_label.setText("")
-            
-        # Update preview styling based on length
+            self.validation_label.setStyleSheet("")
+        
+        # Disable write button if text is too long
         if remaining < 0:
-            self.char_count_label.setStyleSheet("color: #F44336;")  # Red
             self.write_button.setEnabled(False)
-        else:
-            self.char_count_label.setStyleSheet("color: #666666;")  # Gray
 
     def update_tag_status(self, detected: bool, locked: bool = False):
         """Update the tag status indicator and label."""
