@@ -4,7 +4,7 @@
 
  The particular use case is that I use NFC tags in order to record inventory labels. Each inventory label is a digital link IE URL.
 
- This is a real URL from the inventory system. As you can see, they are quite long:
+ This is an example URL from the inventory system. As you can see, they are quite long:
 
  https://inventory.example.com/item/8ebf2dfe-507f-44a5-acfc-b94d895f1975
 
