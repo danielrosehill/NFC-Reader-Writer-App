@@ -34,7 +34,7 @@ class NFCReaderGUI(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("NFC Reader/Writer v3.2")
+        self.setWindowTitle("NFC Reader/Writer v3.3")
         
         # Initialize theme state
         self.dark_mode = False
@@ -486,7 +486,7 @@ class NFCReaderGUI(QMainWindow):
         header_layout.addWidget(icon_label)
         
         # Version info
-        version_label = QLabel("Version 3.2")
+        version_label = QLabel("Version 3.3")
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet("font-weight: bold; color: #1976d2; margin: 10px 0;")
         header_layout.addWidget(version_label)
@@ -600,6 +600,51 @@ class NFCReaderGUI(QMainWindow):
         """)
         manual_layout.addWidget(manual_text)
         
+        # Changelog section
+        changelog_group = QGroupBox("Changelog")
+        changelog_layout = QVBoxLayout(changelog_group)
+        
+        changelog_text = QTextEdit()
+        changelog_text.setReadOnly(True)
+        changelog_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #fafafa;
+                border: none;
+                padding: 15px;
+            }
+        """)
+        changelog_text.setHtml("""
+            <style>
+                h4 { color: #1976d2; margin-top: 10px; margin-bottom: 5px; }
+                ul { margin-left: 20px; line-height: 1.4; }
+                li { margin-bottom: 6px; }
+                .new { color: #2e7d32; }
+                .fix { color: #d32f2f; }
+                .improve { color: #1976d2; }
+            </style>
+            
+            <h4>Version 3.3 (February 2024)</h4>
+            <ul>
+                <li><span class='new'>NEW:</span> Dark mode toggle with Ctrl+T shortcut</li>
+                <li><span class='new'>NEW:</span> Enhanced status bar with reader and tag status</li>
+                <li><span class='new'>NEW:</span> Tab switching shortcuts (Ctrl+1/2/3)</li>
+                <li><span class='improve'>IMPROVE:</span> Better keyboard shortcuts and tooltips</li>
+                <li><span class='improve'>IMPROVE:</span> Enhanced URL validation and formatting</li>
+                <li><span class='fix'>FIX:</span> Clipboard paste functionality</li>
+            </ul>
+            
+            <h4>Version 3.2 (January 2024)</h4>
+            <ul>
+                <li><span class='new'>NEW:</span> Quick write button for single tags</li>
+                <li><span class='new'>NEW:</span> Recent URLs dropdown</li>
+                <li><span class='improve'>IMPROVE:</span> Enhanced tag detection reliability</li>
+                <li><span class='improve'>IMPROVE:</span> Better visual feedback for write operations</li>
+                <li><span class='fix'>FIX:</span> URL handling for local network addresses</li>
+            </ul>
+        """)
+        changelog_layout.addWidget(changelog_text)
+        
+        layout.addWidget(changelog_group)
         layout.addWidget(manual_group)
 
     def setup_shortcuts(self):
