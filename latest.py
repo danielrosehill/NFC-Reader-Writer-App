@@ -1604,7 +1604,6 @@ class NFCReaderGUI(QMainWindow):
     def clear_write_entry(self):
         """Clear the write entry field."""
         self.write_entry.clear()
-        self.url_preview.clear()
         self.validation_label.clear()
         self.char_count_label.setText("Characters remaining: 137")
         self.validate_write_input()
@@ -1710,14 +1709,6 @@ class NFCReaderGUI(QMainWindow):
                         border-radius: 4px;
                     """)
                     self.validation_label.setText("✓ Valid URL format (Non-inventory URL)")
-                self.validation_label.setStyleSheet("""
-                    color: #4CAF50;
-                    font-weight: bold;
-                    background-color: #E8F5E9;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                """)
-                self.validation_label.setText("✓ Valid URL format")
             else:
                 self.write_button.setEnabled(False)
                 self.validation_label.setStyleSheet("""
@@ -1785,7 +1776,7 @@ class NFCReaderGUI(QMainWindow):
                 self.tag_indicator.setStyleSheet("background-color: #4CAF50; border-radius: 7px;")  # Green
                 self.tag_status_label.setText("Tag Detected")
         else:
-            self.tag_indicator.setStyleSheet("background-color: #FFA500; border-radius: 7px;")  # Orange
+            self.tag_indicator.setStyleSheet("background-color: #FF9800; border-radius: 7px;")  # Deeper orange for better visibility
             self.tag_status_label.setText("No Tag Present")
 
 
