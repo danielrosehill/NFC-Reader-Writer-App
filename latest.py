@@ -1113,9 +1113,12 @@ class NFCReaderGUI(QMainWindow):
                     response, sw1, sw2 = connection.transmit(self.GET_UID)
                     if sw1 == 0x90:
                         uid = self.toHexString(response)
-                        # Always update status when tag is detected
+                        # Update UI via signals and direct calls
                         self.status_signal.emit("Tag Ready")
                         self.write_status_signal.emit("Tag Ready - Click Write to proceed")
+                        self.tag_status_label.setText("Tag Ready")
+                        self.tag_indicator.setStyleSheet("background-color: #4CAF50; border-radius: 7px;")  # Green
+                        self.tag_status.setText("Tag Present")  # Update status bar
                         self.last_activity_time = time.time()
                         
                         # Only process if it's a new tag
