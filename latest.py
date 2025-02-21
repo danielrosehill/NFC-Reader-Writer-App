@@ -1113,14 +1113,16 @@ class NFCReaderGUI(QMainWindow):
                     response, sw1, sw2 = connection.transmit(self.GET_UID)
                     if sw1 == 0x90:
                         uid = self.toHexString(response)
-                        self.update_tag_status(True)  # Always update status when tag is detected
-                        self.tag_status_label.setText("Tag Ready")  # Update label to show tag is ready
-                        self.last_activity_time = time.time()  # Update activity timestamp
+                        # Use signals to update UI from background thread
+                        self.status_signal.emit("Tag Ready")
+                        self.last_activity_time = time.time()
                         
                         # Only process if it's a new tag
                         if uid != last_uid:
                             last_uid = uid
                             self.log_signal.emit("New tag detected", f"UID: {uid}")
+                            # Update tag status via signal
+                            self.write_status_signal.emit("Tag Ready - Click Write to proceed")
                             
                             # Read tag memory
                             memory_data = self.read_tag_memory(connection)
@@ -1525,8 +1527,13 @@ class NFCReaderGUI(QMainWindow):
 
     @pyqtSlot(str)
     def update_status_label(self, text):
-        """Update the status label."""
+        """Update the status label and tag indicator."""
         self.status_label.setText(text)
+        if text == "Tag Ready":
+            self.update_tag_status(True)
+            self.tag_status_label.setText("Tag Ready")
+        elif "No" in text or "Error" in text:
+            self.update_tag_status(False)
 
     @pyqtSlot(str, str)
     def _get_title_color(self, title):
