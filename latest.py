@@ -48,7 +48,7 @@ class NFCReaderGUI(QMainWindow):
         
         # Setup status bar with additional info
         self.setup_status_bar()
-        self.setMinimumSize(1000, 800)
+        self.setMinimumSize(800, 600)  # Smaller minimum size but still usable
         self.setWindowIcon(QIcon('launcher-icon/acr_1252.ico'))
         self.debug_mode = False  # Debug mode disabled by default
         
@@ -728,7 +728,7 @@ class NFCReaderGUI(QMainWindow):
         # Recent URLs dropdown
         self.recent_urls = []
         self.url_combo = QComboBox()
-        self.url_combo.setMinimumWidth(600)  # Wider for better visibility
+        self.url_combo.setMinimumWidth(400)  # Smaller minimum but still readable
         self.url_combo.setMinimumHeight(45)  # Taller for better touch targets
         self.url_combo.setEditable(True)
         self.url_combo.setInsertPolicy(QComboBox.InsertPolicy.InsertAtTop)
@@ -737,12 +737,13 @@ class NFCReaderGUI(QMainWindow):
         self.write_entry.setStyleSheet("""
             QLineEdit {
                 font-family: 'Segoe UI';
-                font-size: 16px;
-                padding: 12px 16px;    /* More padding for better visibility */
+                font-size: 14px;  /* Slightly smaller font */
+                padding: 8px 12px;  /* Reduced padding */
                 border: 1px solid #e0e0e0;
                 border-radius: 6px;
-                margin-bottom: 25px;
-                margin-top: 10px;
+                margin-bottom: 15px;  /* Reduced margin */
+                margin-top: 8px;
+                min-width: 300px;  /* Ensure minimum readable width */
             }
             QLineEdit:focus {
                 border: 2px solid #1976d2;
