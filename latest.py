@@ -1114,11 +1114,12 @@ class NFCReaderGUI(QMainWindow):
                     if sw1 == 0x90:
                         uid = self.toHexString(response)
                         self.update_tag_status(True)  # Always update status when tag is detected
+                        self.tag_status_label.setText("Tag Ready")  # Update label to show tag is ready
+                        self.last_activity_time = time.time()  # Update activity timestamp
                         
                         # Only process if it's a new tag
                         if uid != last_uid:
                             last_uid = uid
-                            self.last_activity_time = time.time()  # Update activity timestamp
                             self.log_signal.emit("New tag detected", f"UID: {uid}")
                             
                             # Read tag memory
@@ -1854,8 +1855,8 @@ class NFCReaderGUI(QMainWindow):
                 self.tag_indicator.setStyleSheet("background-color: #4CAF50; border-radius: 7px;")  # Green
                 self.tag_status_label.setText("Tag Detected")
         else:
-            self.tag_indicator.setStyleSheet("background-color: #FF9800; border-radius: 7px;")  # Deeper orange for better visibility
-            self.tag_status_label.setText("No Tag Present")
+            self.tag_indicator.setStyleSheet("background-color: #FF9800; border-radius: 7px;")  # Orange for no tag
+            self.tag_status_label.setText("Waiting for Tag...")
 
     def setup_status_bar(self):
         """Setup enhanced status bar."""
