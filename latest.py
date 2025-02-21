@@ -2070,8 +2070,11 @@ class NFCReaderGUI(QMainWindow):
                         else:
                             # For single tag writes, reset status after success
                             if quantity == 1:
-                                QTimer.singleShot(1500, lambda: self.write_status_signal.emit("Ready - Please present tag..."))
-                                QTimer.singleShot(1500, lambda: self.update_tag_status(False))  # Reset to no tag present
+                                self.write_status_signal.emit("✓ Write Successful!")
+                                # Sleep in the background thread instead of using QTimer
+                                time.sleep(1.5)
+                                self.write_status_signal.emit("Ready - Please present tag...")
+                                self.status_signal.emit("Status: Waiting for tag")  # This will trigger tag status update
                             else:
                                 # For batch operations, show progress
                                 if self.lock_checkbox.isChecked():
