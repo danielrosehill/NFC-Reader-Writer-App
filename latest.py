@@ -34,7 +34,9 @@ class NFCReaderGUI(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("NFC Reader/Writer")
+        self.setWindowTitle("NFC Reader/Writer v3.2")
+        # Set up keyboard shortcuts
+        self.setup_shortcuts()
         self.setMinimumSize(1000, 800)
         self.setWindowIcon(QIcon('launcher-icon/acr_1252.ico'))
         self.debug_mode = False  # Debug mode disabled by default
@@ -589,9 +591,28 @@ class NFCReaderGUI(QMainWindow):
         
         layout.addWidget(manual_group)
 
+    def setup_shortcuts(self):
+        """Setup keyboard shortcuts."""
+        # Paste shortcut
+        paste_shortcut = QShortcut(QKeySequence.StandardKey.Paste, self)
+        paste_shortcut.activated.connect(self.paste_to_write_entry)
+        
+        # Copy shortcut for URL
+        copy_url_shortcut = QShortcut(QKeySequence.StandardKey.Copy, self)
+        copy_url_shortcut.activated.connect(self.copy_detected_url)
+        
+        # Clear shortcut (Ctrl+L)
+        clear_shortcut = QShortcut(QKeySequence("Ctrl+L"), self)
+        clear_shortcut.activated.connect(self.clear_write_entry)
+
     def setup_write_interface(self):
         """Setup the write tab interface."""
         layout = QVBoxLayout(self.write_tab)
+        
+        # Add keyboard shortcut hints to tooltips
+        paste_tooltip = "Paste URL from clipboard (Ctrl+V)"
+        clear_tooltip = "Clear input field (Ctrl+L)"
+        copy_tooltip = "Copy URL to clipboard (Ctrl+C)"
         
         # Quick Write section for single tags
         quick_write_group = QGroupBox("Quick Write")
@@ -637,8 +658,8 @@ class NFCReaderGUI(QMainWindow):
         # Recent URLs dropdown
         self.recent_urls = []
         self.url_combo = QComboBox()
-        self.url_combo.setMinimumWidth(500)
-        self.url_combo.setMinimumHeight(40)
+        self.url_combo.setMinimumWidth(600)  # Wider for better visibility
+        self.url_combo.setMinimumHeight(45)  # Taller for better touch targets
         self.url_combo.setEditable(True)
         self.url_combo.setInsertPolicy(QComboBox.InsertPolicy.InsertAtTop)
         self.url_combo.currentTextChanged.connect(self.validate_write_input)
@@ -647,16 +668,24 @@ class NFCReaderGUI(QMainWindow):
             QLineEdit {
                 font-family: 'Segoe UI';
                 font-size: 16px;
-                padding: 8px 12px;    /* Vertical and horizontal padding */
-                border: none;
-                margin-bottom: 25px;  /* Keep the spacing below */
-                margin-top: 10px;     /* Keep the spacing above */
+                padding: 12px 16px;    /* More padding for better visibility */
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                margin-bottom: 25px;
+                margin-top: 10px;
+            }
+            QLineEdit:focus {
+                border: 2px solid #1976d2;
+                background-color: #f5f5f5;
+            }
+            QLineEdit::placeholder {
+                color: #9e9e9e;
             }
         """)
         
         # Paste button with circular icon style
         paste_button = QPushButton("📋")
-        paste_button.setToolTip("Paste from clipboard")
+        paste_button.setToolTip(paste_tooltip)
         paste_button.clicked.connect(self.paste_to_write_entry)
         paste_button.setFixedSize(40, 40)
         paste_button.setStyleSheet("""
@@ -675,7 +704,7 @@ class NFCReaderGUI(QMainWindow):
         
         # Clear button with circular icon style
         clear_button = QPushButton("🗑️")
-        clear_button.setToolTip("Clear input")
+        clear_button.setToolTip(clear_tooltip)
         clear_button.clicked.connect(self.clear_write_entry)
         clear_button.setFixedSize(40, 40)
         clear_button.setStyleSheet("""
@@ -1549,8 +1578,13 @@ class NFCReaderGUI(QMainWindow):
 
     def paste_to_write_entry(self):
         """Paste clipboard content into write entry."""
-        clipboard = QApplication.clipboard()
-        text = clipboard.text().strip()
+        try:
+            clipboard = QApplication.clipboard()
+            text = clipboard.text().strip()
+            
+            if not text:
+                self.log_signal.emit("System", "Clipboard is empty")
+                return
         if text:
             # Store original text for comparison
             original_text = text
