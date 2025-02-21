@@ -1585,7 +1585,7 @@ class NFCReaderGUI(QMainWindow):
             if not text:
                 self.log_signal.emit("System", "Clipboard is empty")
                 return
-        if text:
+                
             # Store original text for comparison
             original_text = text
             
@@ -1634,6 +1634,8 @@ class NFCReaderGUI(QMainWindow):
             
             # Also log the change
             self.log_signal.emit("System", f"URL updated to: {text}")
+        except Exception as e:
+            self.log_signal.emit("Error", f"Failed to paste from clipboard: {str(e)}")
 
     def clear_write_entry(self):
         """Clear the write entry field."""
