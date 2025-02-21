@@ -35,8 +35,15 @@ class NFCReaderGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("NFC Reader/Writer v3.2")
+        
+        # Initialize theme state
+        self.dark_mode = False
+        
         # Set up keyboard shortcuts
         self.setup_shortcuts()
+        
+        # Setup status bar with additional info
+        self.setup_status_bar()
         self.setMinimumSize(1000, 800)
         self.setWindowIcon(QIcon('launcher-icon/acr_1252.ico'))
         self.debug_mode = False  # Debug mode disabled by default
@@ -604,6 +611,20 @@ class NFCReaderGUI(QMainWindow):
         # Clear shortcut (Ctrl+L)
         clear_shortcut = QShortcut(QKeySequence("Ctrl+L"), self)
         clear_shortcut.activated.connect(self.clear_write_entry)
+        
+        # Tab shortcuts
+        read_tab_shortcut = QShortcut(QKeySequence("Ctrl+1"), self)
+        read_tab_shortcut.activated.connect(lambda: self.tab_widget.setCurrentIndex(0))
+        
+        write_tab_shortcut = QShortcut(QKeySequence("Ctrl+2"), self)
+        write_tab_shortcut.activated.connect(lambda: self.tab_widget.setCurrentIndex(1))
+        
+        about_tab_shortcut = QShortcut(QKeySequence("Ctrl+3"), self)
+        about_tab_shortcut.activated.connect(lambda: self.tab_widget.setCurrentIndex(2))
+        
+        # Theme toggle (Ctrl+T)
+        theme_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
+        theme_shortcut.activated.connect(self.toggle_theme)
 
     def setup_write_interface(self):
         """Setup the write tab interface."""
@@ -1720,31 +1741,17 @@ class NFCReaderGUI(QMainWindow):
             except Exception:
                 url_valid = False
                 
-            # Additional validation for inventory system URLs
-            inventory_valid = bool(re.match(r'^https?://inventory\.example\.com/item/[\w-]+$', text))
-            
             if url_valid:
                 self.write_button.setEnabled(True)
                 self.quick_write_button.setEnabled(True)
-                
-                if inventory_valid:
-                    self.validation_label.setStyleSheet("""
-                        color: #4CAF50;
-                        font-weight: bold;
-                        background-color: #E8F5E9;
-                        padding: 4px 8px;
-                        border-radius: 4px;
-                    """)
-                    self.validation_label.setText("✓ Valid Inventory System URL")
-                else:
-                    self.validation_label.setStyleSheet("""
-                        color: #FF9800;
-                        font-weight: bold;
-                        background-color: #FFF3E0;
-                        padding: 4px 8px;
-                        border-radius: 4px;
-                    """)
-                    self.validation_label.setText("✓ Valid URL format (Non-inventory URL)")
+                self.validation_label.setStyleSheet("""
+                    color: #4CAF50;
+                    font-weight: bold;
+                    background-color: #E8F5E9;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                """)
+                self.validation_label.setText("✓ Valid URL format")
             else:
                 self.write_button.setEnabled(False)
                 self.validation_label.setStyleSheet("""
@@ -1978,3 +1985,68 @@ def main():
 
 if __name__ == "__main__":
     main()
+    def setup_status_bar(self):
+        """Setup enhanced status bar."""
+        # Create permanent widgets for the status bar
+        self.reader_status = QLabel("No Reader")
+        self.tag_status = QLabel("No Tag")
+        self.theme_status = QLabel("Light Mode")
+        
+        # Add permanent widgets to status bar
+        self.statusBar.addPermanentWidget(self.reader_status)
+        self.statusBar.addPermanentWidget(QLabel("|"))  # Separator
+        self.statusBar.addPermanentWidget(self.tag_status)
+        self.statusBar.addPermanentWidget(QLabel("|"))  # Separator
+        self.statusBar.addPermanentWidget(self.theme_status)
+        
+        # Style the status bar
+        self.statusBar.setStyleSheet("""
+            QStatusBar {
+                border-top: 1px solid #d0d0d0;
+            }
+            QLabel {
+                padding: 3px 6px;
+            }
+        """)
+
+    def toggle_theme(self):
+        """Toggle between light and dark themes."""
+        self.dark_mode = not self.dark_mode
+        if self.dark_mode:
+            self.setStyleSheet("""
+                QMainWindow, QWidget {
+                    background-color: #2b2b2b;
+                    color: #ffffff;
+                }
+                QTabWidget::pane {
+                    border: 1px solid #3d3d3d;
+                    background-color: #2b2b2b;
+                }
+                QTabBar::tab {
+                    background-color: #3d3d3d;
+                    color: #ffffff;
+                    border: 1px solid #4d4d4d;
+                }
+                QTabBar::tab:selected {
+                    background-color: #2b2b2b;
+                    border-bottom: 2px solid #1976d2;
+                }
+                QLineEdit, QTextEdit, QComboBox {
+                    background-color: #3d3d3d;
+                    color: #ffffff;
+                    border: 1px solid #4d4d4d;
+                }
+                QPushButton {
+                    background-color: #1976d2;
+                    color: white;
+                    border: none;
+                }
+                QGroupBox {
+                    border: 1px solid #4d4d4d;
+                    color: #ffffff;
+                }
+            """)
+            self.theme_status.setText("Dark Mode")
+        else:
+            self.apply_light_theme()
+            self.theme_status.setText("Light Mode")
