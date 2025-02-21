@@ -2062,10 +2062,16 @@ class NFCReaderGUI(QMainWindow):
                                 self.update_tag_status(True, True)  # Show locked status
                             break
                         else:
-                            if self.lock_checkbox.isChecked():
-                                self.update_tag_status(True, True)  # Show locked status
-                            self.write_status_signal.emit(
-                                f"Wrote tag {tags_written}/{quantity}. Please present next tag.")
+                            # For single tag writes, reset status after success
+                            if quantity == 1:
+                                QTimer.singleShot(1500, lambda: self.write_status_signal.emit("Ready - Please present tag..."))
+                                QTimer.singleShot(1500, lambda: self.update_tag_status(False))  # Reset to no tag present
+                            else:
+                                # For batch operations, show progress
+                                if self.lock_checkbox.isChecked():
+                                    self.update_tag_status(True, True)  # Show locked status
+                                self.write_status_signal.emit(
+                                    f"Wrote tag {tags_written}/{quantity}. Please present next tag.")
                 
                 connection.disconnect()
                 
