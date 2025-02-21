@@ -1526,15 +1526,9 @@ class NFCReaderGUI(QMainWindow):
 
     @pyqtSlot(str)
     def update_status_label(self, text):
-        """Update the status label and tag indicator."""
+        """Update the status label."""
         self.status_label.setText(text)
-        if text == "Tag Ready":
-            self.update_tag_status(True)
-            self.tag_status_label.setText("Tag Ready")
-            self.tag_status.setText("Tag Present")  # Update status bar
-        elif "No" in text or "Error" in text:
-            self.update_tag_status(False)
-            self.tag_status.setText("No Tag")  # Update status bar
+        # Tag status is now handled directly in the scan loop
 
     @pyqtSlot(str, str)
     def _get_title_color(self, title):
