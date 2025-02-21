@@ -1833,18 +1833,16 @@ class NFCReaderGUI(QMainWindow):
             background-color: #4CAF50;
             border-radius: 7px;
             border: 2px solid #2E7D32;
-            box-shadow: 0 0 10px #4CAF50;
         """)
         self.tag_status_label.setText("✓ Write Successful!")
         self.tag_status_label.setStyleSheet("color: #4CAF50; font-weight: bold;")
         
         # Restore original state after delay
-        def restore():
-            self.tag_indicator.setStyleSheet(original_style)
-            self.tag_status_label.setText(original_text)
-            self.tag_status_label.setStyleSheet("")
-            
-        QTimer.singleShot(1500, restore)
+        # Use a direct call after delay instead of QTimer to avoid threading issues
+        time.sleep(1.5)
+        self.tag_indicator.setStyleSheet(original_style)
+        self.tag_status_label.setText(original_text)
+        self.tag_status_label.setStyleSheet("")
 
     def update_tag_status(self, detected: bool, locked: bool = False):
         """Update the tag status indicator and label."""
