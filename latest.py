@@ -14,10 +14,10 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QHBoxLayout, QLabel, QPushButton, QTabWidget, 
                             QTextEdit, QLineEdit, QSpinBox, QCheckBox, 
                             QGroupBox, QFrame, QMessageBox, QSizePolicy,
-                            QComboBox, QShortcut)
+                            QComboBox)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot, QSize
 from PyQt6.QtGui import (QFont, QPalette, QColor, QIcon, QPixmap, 
-                        QKeySequence)
+                        QKeySequence, QShortcut)
 
 class NFCReaderGUI(QMainWindow):
     # APDU Commands
