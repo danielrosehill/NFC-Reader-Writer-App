@@ -723,7 +723,8 @@ class NFCReaderGUI(QMainWindow):
         # Input container with buttons
         input_container = QWidget()
         input_container_layout = QHBoxLayout(input_container)
-        input_container_layout.setContentsMargins(0, 0, 0, 0)
+        input_container_layout.setContentsMargins(4, 4, 4, 4)  # Tighter margins
+        input_container_layout.setSpacing(4)  # Reduce spacing between elements
         
         # Recent URLs dropdown
         self.recent_urls = []
