@@ -1113,13 +1113,13 @@ class NFCReaderGUI(QMainWindow):
                     response, sw1, sw2 = connection.transmit(self.GET_UID)
                     if sw1 == 0x90:
                         uid = self.toHexString(response)
+                        self.update_tag_status(True)  # Always update status when tag is detected
                         
                         # Only process if it's a new tag
                         if uid != last_uid:
                             last_uid = uid
                             self.last_activity_time = time.time()  # Update activity timestamp
                             self.log_signal.emit("New tag detected", f"UID: {uid}")
-                            self.update_tag_status(True)  # Update status when tag detected
                             
                             # Read tag memory
                             memory_data = self.read_tag_memory(connection)
