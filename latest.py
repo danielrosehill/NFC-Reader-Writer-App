@@ -1821,42 +1821,28 @@ class NFCReaderGUI(QMainWindow):
             self.write_button.setEnabled(False)
 
     def show_write_success(self):
-        """Show a temporary success animation."""
-        success_label = QLabel("✓", self)
-        success_label.setStyleSheet("""
-            QLabel {
-                color: white;
-                background-color: #4CAF50;
-                border-radius: 25px;
-                padding: 15px;
-                font-size: 24px;
-            }
+        """Show a temporary success animation in the status indicator."""
+        # Save original styles
+        original_style = self.tag_indicator.styleSheet()
+        original_text = self.tag_status_label.text()
+        
+        # Show success animation
+        self.tag_indicator.setStyleSheet("""
+            background-color: #4CAF50;
+            border-radius: 7px;
+            border: 2px solid #2E7D32;
+            box-shadow: 0 0 10px #4CAF50;
         """)
-        success_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        success_label.setFixedSize(50, 50)
+        self.tag_status_label.setText("✓ Write Successful!")
+        self.tag_status_label.setStyleSheet("color: #4CAF50; font-weight: bold;")
         
-        # Position in center of window
-        success_label.move(
-            self.width() // 2 - success_label.width() // 2,
-            self.height() // 2 - success_label.height() // 2
-        )
-        
-        success_label.show()
-        
-        # Fade out animation
-        def fade_out():
-            success_label.setStyleSheet("""
-                QLabel {
-                    color: transparent;
-                    background-color: transparent;
-                    border-radius: 25px;
-                    padding: 15px;
-                    font-size: 24px;
-                }
-            """)
-            QTimer.singleShot(200, success_label.deleteLater)
+        # Restore original state after delay
+        def restore():
+            self.tag_indicator.setStyleSheet(original_style)
+            self.tag_status_label.setText(original_text)
+            self.tag_status_label.setStyleSheet("")
             
-        QTimer.singleShot(500, fade_out)
+        QTimer.singleShot(1500, restore)
 
     def update_tag_status(self, detected: bool, locked: bool = False):
         """Update the tag status indicator and label."""
