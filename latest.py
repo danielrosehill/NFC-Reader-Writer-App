@@ -39,9 +39,9 @@ class NFCReaderGUI(QMainWindow):
         # Initialize theme state
         self.dark_mode = False
         
-        # Create status bar
-        self.statusBar = self.statusBar()
-        self.statusBar.showMessage("Ready")
+        # Get status bar reference
+        self.status_bar = self.statusBar()
+        self.status_bar.showMessage("Ready")
         
         # Set up keyboard shortcuts
         self.setup_shortcuts()
@@ -909,15 +909,15 @@ class NFCReaderGUI(QMainWindow):
                 
                 self.reader = r
                 self.status_signal.emit(f"Status: {reader_model} connected ({reader_id})")
-                self.statusBar.showMessage(f"{reader_model} {reader_id} connected and ready")
+                self.status_bar.showMessage(f"{reader_model} {reader_id} connected and ready")
                 return
 
             self.status_signal.emit("Status: No NFC reader found")
-            self.statusBar.showMessage("Reader not found - Please connect an NFC reader")
+            self.status_bar.showMessage("Reader not found - Please connect an NFC reader")
         except Exception as e:
             error_msg = f"Status: Error - {str(e)}"
             self.status_signal.emit(error_msg)
-            self.statusBar.showMessage("Reader error - Check connection")
+            self.status_bar.showMessage("Reader error - Check connection")
 
     def connect_with_retry(self) -> Tuple[any, bool]:
         """Try to connect to the card with retries."""
@@ -1834,14 +1834,14 @@ class NFCReaderGUI(QMainWindow):
         self.theme_status = QLabel("Light Mode")
         
         # Add permanent widgets to status bar
-        self.statusBar.addPermanentWidget(self.reader_status)
-        self.statusBar.addPermanentWidget(QLabel("|"))  # Separator
-        self.statusBar.addPermanentWidget(self.tag_status)
-        self.statusBar.addPermanentWidget(QLabel("|"))  # Separator
-        self.statusBar.addPermanentWidget(self.theme_status)
+        self.status_bar.addPermanentWidget(self.reader_status)
+        self.status_bar.addPermanentWidget(QLabel("|"))  # Separator
+        self.status_bar.addPermanentWidget(self.tag_status)
+        self.status_bar.addPermanentWidget(QLabel("|"))  # Separator
+        self.status_bar.addPermanentWidget(self.theme_status)
         
         # Style the status bar
-        self.statusBar.setStyleSheet("""
+        self.status_bar.setStyleSheet("""
             QStatusBar {
                 border-top: 1px solid #d0d0d0;
             }
