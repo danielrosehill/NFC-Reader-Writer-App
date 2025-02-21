@@ -39,6 +39,10 @@ class NFCReaderGUI(QMainWindow):
         # Initialize theme state
         self.dark_mode = False
         
+        # Create status bar
+        self.statusBar = self.statusBar()
+        self.statusBar.showMessage("Ready")
+        
         # Set up keyboard shortcuts
         self.setup_shortcuts()
         
@@ -1822,6 +1826,72 @@ class NFCReaderGUI(QMainWindow):
             self.tag_indicator.setStyleSheet("background-color: #FF9800; border-radius: 7px;")  # Deeper orange for better visibility
             self.tag_status_label.setText("No Tag Present")
 
+    def setup_status_bar(self):
+        """Setup enhanced status bar."""
+        # Create permanent widgets for the status bar
+        self.reader_status = QLabel("No Reader")
+        self.tag_status = QLabel("No Tag")
+        self.theme_status = QLabel("Light Mode")
+        
+        # Add permanent widgets to status bar
+        self.statusBar.addPermanentWidget(self.reader_status)
+        self.statusBar.addPermanentWidget(QLabel("|"))  # Separator
+        self.statusBar.addPermanentWidget(self.tag_status)
+        self.statusBar.addPermanentWidget(QLabel("|"))  # Separator
+        self.statusBar.addPermanentWidget(self.theme_status)
+        
+        # Style the status bar
+        self.statusBar.setStyleSheet("""
+            QStatusBar {
+                border-top: 1px solid #d0d0d0;
+            }
+            QLabel {
+                padding: 3px 6px;
+            }
+        """)
+
+    def toggle_theme(self):
+        """Toggle between light and dark themes."""
+        self.dark_mode = not self.dark_mode
+        if self.dark_mode:
+            self.setStyleSheet("""
+                QMainWindow, QWidget {
+                    background-color: #2b2b2b;
+                    color: #ffffff;
+                }
+                QTabWidget::pane {
+                    border: 1px solid #3d3d3d;
+                    background-color: #2b2b2b;
+                }
+                QTabBar::tab {
+                    background-color: #3d3d3d;
+                    color: #ffffff;
+                    border: 1px solid #4d4d4d;
+                }
+                QTabBar::tab:selected {
+                    background-color: #2b2b2b;
+                    border-bottom: 2px solid #1976d2;
+                }
+                QLineEdit, QTextEdit, QComboBox {
+                    background-color: #3d3d3d;
+                    color: #ffffff;
+                    border: 1px solid #4d4d4d;
+                }
+                QPushButton {
+                    background-color: #1976d2;
+                    color: white;
+                    border: none;
+                }
+                QGroupBox {
+                    border: 1px solid #4d4d4d;
+                    color: #ffffff;
+                }
+            """)
+            self.theme_status.setText("Dark Mode")
+        else:
+            self.apply_light_theme()
+            self.theme_status.setText("Light Mode")
+
 
     def batch_write_tags(self, text: str, quantity: int):
         """Write the same data to multiple tags."""
@@ -1985,68 +2055,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    def setup_status_bar(self):
-        """Setup enhanced status bar."""
-        # Create permanent widgets for the status bar
-        self.reader_status = QLabel("No Reader")
-        self.tag_status = QLabel("No Tag")
-        self.theme_status = QLabel("Light Mode")
-        
-        # Add permanent widgets to status bar
-        self.statusBar.addPermanentWidget(self.reader_status)
-        self.statusBar.addPermanentWidget(QLabel("|"))  # Separator
-        self.statusBar.addPermanentWidget(self.tag_status)
-        self.statusBar.addPermanentWidget(QLabel("|"))  # Separator
-        self.statusBar.addPermanentWidget(self.theme_status)
-        
-        # Style the status bar
-        self.statusBar.setStyleSheet("""
-            QStatusBar {
-                border-top: 1px solid #d0d0d0;
-            }
-            QLabel {
-                padding: 3px 6px;
-            }
-        """)
-
-    def toggle_theme(self):
-        """Toggle between light and dark themes."""
-        self.dark_mode = not self.dark_mode
-        if self.dark_mode:
-            self.setStyleSheet("""
-                QMainWindow, QWidget {
-                    background-color: #2b2b2b;
-                    color: #ffffff;
-                }
-                QTabWidget::pane {
-                    border: 1px solid #3d3d3d;
-                    background-color: #2b2b2b;
-                }
-                QTabBar::tab {
-                    background-color: #3d3d3d;
-                    color: #ffffff;
-                    border: 1px solid #4d4d4d;
-                }
-                QTabBar::tab:selected {
-                    background-color: #2b2b2b;
-                    border-bottom: 2px solid #1976d2;
-                }
-                QLineEdit, QTextEdit, QComboBox {
-                    background-color: #3d3d3d;
-                    color: #ffffff;
-                    border: 1px solid #4d4d4d;
-                }
-                QPushButton {
-                    background-color: #1976d2;
-                    color: white;
-                    border: none;
-                }
-                QGroupBox {
-                    border: 1px solid #4d4d4d;
-                    color: #ffffff;
-                }
-            """)
-            self.theme_status.setText("Dark Mode")
-        else:
-            self.apply_light_theme()
-            self.theme_status.setText("Light Mode")
