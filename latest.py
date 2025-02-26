@@ -158,16 +158,18 @@ class NFCReaderGUI(QMainWindow):
                 color: #000000;
             }
             QLabel#status_label {
-                color: #1565c0;
-                font-weight: bold;
-                padding: 16px;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #e3f2fd, stop:1 #bbdefb);
-                border-radius: 8px;
-                margin: 8px 0;
-                font-size: 14px;
-                border: 1px solid rgba(25, 118, 210, 0.2);
+                color: #1976d2;
+                font-weight: 600;
+                padding: 8px;
+                background-color: #e3f2fd;
+                border-radius: 4px;
+                margin: 5px 0;
+                font-size: 13px;
+                border: 1px solid #bbdefb;
+                min-height: 18px;
             }
+            
+            
             QPushButton {
                 background-color: #1976d2;
                 color: white;
@@ -209,7 +211,9 @@ class NFCReaderGUI(QMainWindow):
                 selection-background-color: #bbdefb;
                 font-family: 'Segoe UI';
                 font-size: 14px;
+                min-width: 200px;
                 min-height: 24px;
+                margin-right: 5px;
             }
             
             QLineEdit:focus {
@@ -220,6 +224,8 @@ class NFCReaderGUI(QMainWindow):
                 color: #000000;
                 border: 1px solid #d0d0d0;
                 border-radius: 4px;
+                min-width: 80px;
+                min-height: 24px;
                 padding: 6px;
             }
             QGroupBox {
@@ -300,9 +306,11 @@ class NFCReaderGUI(QMainWindow):
         # Create tabs
         self.read_tab = QWidget()
         self.write_tab = QWidget()
+        self.copy_tab = QWidget()
         self.about_tab = QWidget()
         self.tab_widget.addTab(self.read_tab, "Read Tags")
         self.tab_widget.addTab(self.write_tab, "Write Tags")
+        self.tab_widget.addTab(self.copy_tab, "Copy Tags")
         self.tab_widget.addTab(self.about_tab, "About")
         
         # Setup read interface
@@ -310,6 +318,9 @@ class NFCReaderGUI(QMainWindow):
         
         # Setup write interface
         self.setup_write_interface()
+        
+        # Setup copy interface
+        self.setup_copy_interface()
         
         # Setup about interface
         self.setup_about_interface()
@@ -319,24 +330,14 @@ class NFCReaderGUI(QMainWindow):
         layout = QVBoxLayout(self.read_tab)
         
         # Status section with modern card-like design
-        status_frame = QFrame()
-        status_frame.setStyleSheet("""
-            QFrame {
-                background: white;
-                border: 1px solid #e0e0e0;
-                border-radius: 12px;
-                padding: 8px;
-            }
-        """)
-        status_layout = QHBoxLayout(status_frame)
-        status_layout.setContentsMargins(16, 16, 16, 16)
-        
+        # Simplified status label with better compact view support
         self.status_label = QLabel("Status: Waiting for reader...")
         self.status_label.setObjectName("status_label")
-        self.status_label.setMinimumHeight(40)  # Increase height for better visibility
-        status_layout.addWidget(self.status_label)
-        
-        layout.addWidget(status_frame)
+        self.status_label.setMinimumHeight(20)
+        self.status_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
         
         # Scan button
         self.scan_button = QPushButton("Start Scanning")
@@ -446,6 +447,151 @@ class NFCReaderGUI(QMainWindow):
         
         log_layout.addWidget(button_container)
         layout.addWidget(log_group)
+
+    def setup_copy_interface(self):
+        """Setup the copy tab interface."""
+        layout = QVBoxLayout(self.copy_tab)
+        
+        # Status section
+        self.copy_status_label = QLabel("Status: Waiting for reader...")
+        self.copy_status_label.setObjectName("status_label")
+        self.copy_status_label.setMinimumHeight(20)
+        self.copy_status_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.copy_status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.copy_status_label.setWordWrap(True)
+        layout.addWidget(self.copy_status_label)
+        
+        # Source tag section
+        source_group = QGroupBox("Source Tag")
+        source_layout = QVBoxLayout(source_group)
+        
+        # Source tag info with improved display for long URLs
+        source_layout.addWidget(QLabel("Source Tag Content:"))
+        self.source_tag_info = QLabel("No source tag scanned yet")
+        self.source_tag_info.setStyleSheet("""
+            QLabel {
+                font-family: 'Segoe UI';
+                font-size: 12px;
+                color: #1976D2;
+                padding: 8px;
+                background-color: #E3F2FD;
+                border-radius: 4px; 
+                min-height: 60px;
+            }
+        """)
+        self.source_tag_info.setWordWrap(True)
+        source_layout.addWidget(self.source_tag_info)
+        
+        # Read source tag button
+        self.read_source_button = QPushButton("Read & Store Tag")
+        self.read_source_button.clicked.connect(self.read_source_tag)
+        source_layout.addWidget(self.read_source_button, alignment=Qt.AlignmentFlag.AlignCenter)
+        
+        layout.addWidget(source_group)
+        
+        # Copy configuration section
+        copy_config_group = QGroupBox("Copy Configuration")
+        copy_config_layout = QVBoxLayout(copy_config_group)
+        
+        # Number of copies
+        copies_widget = QWidget()
+        copies_layout = QHBoxLayout(copies_widget)
+        copies_layout.setContentsMargins(0, 0, 0, 0)
+        
+        copies_label = QLabel("Number of copies to make:")
+        self.copies_spinbox = QSpinBox()
+        self.copies_spinbox.setRange(1, 10)
+        self.copies_spinbox.setValue(1)
+        
+        copies_layout.addWidget(copies_label)
+        copies_layout.addWidget(self.copies_spinbox)
+        copies_layout.addStretch()
+        
+        copy_config_layout.addWidget(copies_widget)
+        
+        # Lock option
+        self.copy_lock_checkbox = QCheckBox("Lock tags after writing")
+        self.copy_lock_checkbox.setChecked(True)
+        copy_config_layout.addWidget(self.copy_lock_checkbox)
+        
+        layout.addWidget(copy_config_group)
+        
+        # Copy operation section
+        copy_op_group = QGroupBox("Copy Operation")
+        copy_op_layout = QVBoxLayout(copy_op_group)
+        
+        # Progress indicator
+        self.copy_progress_label = QLabel("")
+        copy_op_layout.addWidget(self.copy_progress_label)
+        
+        # Buttons container
+        button_container = QWidget()
+        button_layout = QHBoxLayout(button_container)
+        button_layout.setContentsMargins(0, 8, 0, 0)
+        button_layout.setSpacing(12)
+        
+        # Copy button
+        self.copy_button = QPushButton("Copy to New Tag")
+        self.copy_button.clicked.connect(self.copy_to_new_tag)
+        self.copy_button.setEnabled(False)  # Disabled until source tag is read
+        
+        # Reset button
+        self.reset_copy_button = QPushButton("Reset")
+        self.reset_copy_button.clicked.connect(self.reset_copy_operation)
+        self.reset_copy_button.setStyleSheet("""
+            QPushButton {
+                background-color: #FF9800;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #F57C00;
+            }
+        """)
+        
+        # Stop button
+        self.stop_copy_button = QPushButton("Stop")
+        self.stop_copy_button.clicked.connect(self.stop_copy_operation)
+        self.stop_copy_button.setStyleSheet("""
+            QPushButton {
+                background-color: #F44336;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #D32F2F;
+            }
+        """)
+        self.stop_copy_button.setEnabled(False)  # Disabled until copy operation starts
+        
+        button_layout.addWidget(self.copy_button)
+        button_layout.addWidget(self.reset_copy_button)
+        button_layout.addWidget(self.stop_copy_button)
+        
+        copy_op_layout.addWidget(button_container)
+        
+        # Tag status indicator
+        tag_status_widget = QWidget()
+        tag_status_layout = QHBoxLayout(tag_status_widget)
+        tag_status_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.copy_tag_indicator = QLabel()
+        self.copy_tag_indicator.setFixedSize(15, 15)
+        self.copy_tag_indicator.setStyleSheet("background-color: #FFA500; border-radius: 7px;")  # Orange by default
+        
+        self.copy_tag_status_label = QLabel("No Tag Present")
+        tag_status_layout.addWidget(self.copy_tag_indicator)
+        tag_status_layout.addWidget(self.copy_tag_status_label)
+        tag_status_layout.addStretch()
+        
+        copy_op_layout.addWidget(tag_status_widget)
+        
+        layout.addWidget(copy_op_group)
+        
+        # Store variables for copy operation
+        self.source_tag_data = None
+        self.copying = False
+        self.copies_made = 0
+        
+        layout.addStretch()
 
     def setup_about_interface(self):
         """Setup the about tab interface."""
@@ -664,6 +810,9 @@ class NFCReaderGUI(QMainWindow):
         # Tab shortcuts
         read_tab_shortcut = QShortcut(QKeySequence("Ctrl+1"), self)
         read_tab_shortcut.activated.connect(lambda: self.tab_widget.setCurrentIndex(0))
+
+        copy_tab_shortcut = QShortcut(QKeySequence("Ctrl+3"), self)
+        copy_tab_shortcut.activated.connect(lambda: self.tab_widget.setCurrentIndex(2))
         
         write_tab_shortcut = QShortcut(QKeySequence("Ctrl+2"), self)
         write_tab_shortcut.activated.connect(lambda: self.tab_widget.setCurrentIndex(1))
@@ -671,36 +820,13 @@ class NFCReaderGUI(QMainWindow):
         about_tab_shortcut = QShortcut(QKeySequence("Ctrl+3"), self)
         about_tab_shortcut.activated.connect(lambda: self.tab_widget.setCurrentIndex(2))
         
-        # Theme toggle (Ctrl+T)
+        # Theme toggle (Ctrl+T) 
         theme_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
         theme_shortcut.activated.connect(self.toggle_theme)
 
     def setup_write_interface(self):
         """Setup the write tab interface."""
         layout = QVBoxLayout(self.write_tab)
-        
-        # Add keyboard shortcut hints to tooltips
-        paste_tooltip = "Paste URL from clipboard (Ctrl+V)"
-        clear_tooltip = "Clear input field (Ctrl+L)"
-        copy_tooltip = "Copy URL to clipboard (Ctrl+C)"
-        
-        # Quick Write section for single tags
-        quick_write_group = QGroupBox("Quick Write")
-        quick_write_layout = QHBoxLayout(quick_write_group)
-        
-        self.quick_write_button = QPushButton("Quick Write Single Tag")
-        self.quick_write_button.setToolTip("Quickly write the current URL to a single tag")
-        self.quick_write_button.clicked.connect(lambda: self.batch_write_tags(self.write_entry.text().strip(), 1))
-        self.quick_write_button.setEnabled(False)
-        self.quick_write_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                padding: 12px 24px;
-            }
-        """)
-        
-        quick_write_layout.addWidget(self.quick_write_button)
-        layout.addWidget(quick_write_group)
         
         # Input section
         input_group = QGroupBox("Tag Content")
@@ -729,7 +855,8 @@ class NFCReaderGUI(QMainWindow):
         # Recent URLs dropdown
         self.recent_urls = []
         self.url_combo = QComboBox()
-        self.url_combo.setMinimumWidth(400)  # Smaller minimum but still readable
+        self.url_combo.setMinimumWidth(300)  # Ensure minimum readable width
+        self.url_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)  # Allow expanding horizontally
         self.url_combo.setMinimumHeight(45)  # Taller for better touch targets
         self.url_combo.setEditable(True)
         self.url_combo.setInsertPolicy(QComboBox.InsertPolicy.InsertAtTop)
@@ -739,11 +866,11 @@ class NFCReaderGUI(QMainWindow):
             QLineEdit {
                 font-family: 'Segoe UI';
                 font-size: 14px;  /* Slightly smaller font */
-                padding: 8px 12px;  /* Reduced padding */
+                padding: 8px;  /* Reduced padding */
                 border: 1px solid #e0e0e0;
                 border-radius: 6px;
-                margin-bottom: 15px;  /* Reduced margin */
-                margin-top: 8px;
+                margin-bottom: 10px;  /* Reduced margin */
+                margin-top: 5px;
                 min-width: 300px;  /* Ensure minimum readable width */
             }
             QLineEdit:focus {
@@ -756,6 +883,7 @@ class NFCReaderGUI(QMainWindow):
         """)
         
         # Paste button with circular icon style
+        paste_tooltip = "Paste URL from clipboard (Ctrl+V)"
         paste_button = QPushButton("📋")
         paste_button.setToolTip(paste_tooltip)
         paste_button.clicked.connect(self.paste_to_write_entry)
@@ -775,6 +903,7 @@ class NFCReaderGUI(QMainWindow):
         """)
         
         # Clear button with circular icon style
+        clear_tooltip = "Clear input field (Ctrl+L)"
         clear_button = QPushButton("🗑️")
         clear_button.setToolTip(clear_tooltip)
         clear_button.clicked.connect(self.clear_write_entry)
@@ -794,7 +923,7 @@ class NFCReaderGUI(QMainWindow):
         """)
         
         input_container_layout.addWidget(self.write_entry)
-        input_container_layout.addWidget(paste_button)
+        input_container_layout.addWidget(paste_button, alignment=Qt.AlignmentFlag.AlignRight)
         input_container_layout.addWidget(clear_button)
         
         input_layout.addWidget(input_label)
@@ -806,7 +935,7 @@ class NFCReaderGUI(QMainWindow):
         test_url_button = QPushButton("🔗 Test URL")
         test_url_button.setToolTip("Open URL in browser to test")
         test_url_button.clicked.connect(self.test_url)
-        test_url_button.setFixedWidth(120)
+        test_url_button.setFixedWidth(100)
         input_container_layout.addWidget(test_url_button)
         
         # Batch writing section
@@ -815,7 +944,7 @@ class NFCReaderGUI(QMainWindow):
         batch_layout.setContentsMargins(0, 0, 0, 0)
         
         quantity_label = QLabel("Number of tags to write:")
-        self.quantity_spinbox = QSpinBox()
+        self.quantity_spinbox = QSpinBox() 
         self.quantity_spinbox.setRange(1, 100)
         self.quantity_spinbox.setValue(1)
         
@@ -836,7 +965,7 @@ class NFCReaderGUI(QMainWindow):
         
         self.write_button = QPushButton("Write Tag")
         self.write_button.clicked.connect(self.write_tag)
-        self.write_button.setFixedWidth(200)
+        self.write_button.setFixedWidth(180)
         self.write_button.setEnabled(False)  # Disabled by default
         
         # Connect text changed signal to enable/disable button
@@ -866,7 +995,7 @@ class NFCReaderGUI(QMainWindow):
         status_layout = QHBoxLayout(status_group)
         status_layout.setContentsMargins(16, 24, 16, 16)
         status_layout.setSpacing(16)
-        
+
         # Progress label
         self.progress_label = QLabel("")
         status_layout.addWidget(self.progress_label)
@@ -901,7 +1030,6 @@ class NFCReaderGUI(QMainWindow):
         write_status_layout.addWidget(self.clear_status_button)
         
         status_layout.addWidget(tag_status_widget)
-        status_layout.addWidget(write_status_widget)
         layout.addWidget(status_group)
         layout.addStretch()
 
@@ -1069,10 +1197,71 @@ class NFCReaderGUI(QMainWindow):
             
         return all_data
 
+    def read_tag_memory_full(self, connection) -> List[int]:
+        """Read NTAG213/215/216 memory pages with extended capacity for longer URLs."""
+        all_data = []
+        
+        # First verify tag presence with UID check
+        try:
+            response, sw1, sw2 = connection.transmit(self.GET_UID)
+            if sw1 != 0x90:
+                self.log_signal.emit("Error", f"Tag presence check failed: SW1={sw1:02X} SW2={sw2:02X}")
+                return []
+        except Exception as e:
+            self.log_signal.emit("Error", f"UID check failed: {str(e)}")
+            return []
+            
+        # Read capability container (CC) first
+        try:
+            cc_cmd = self.READ_PAGE + [3, 0x04]
+            response, sw1, sw2 = connection.transmit(cc_cmd)
+            if sw1 == 0x90:
+                self.log_signal.emit("Debug", f"CC: {self.toHexString(response)}")
+            else:
+                self.log_signal.emit("Error", f"CC read failed: SW1={sw1:02X} SW2={sw2:02X}")
+                return []
+        except Exception as e:
+            self.log_signal.emit("Error", f"CC read error: {str(e)}")
+            return []
+            
+        # Read extended range of pages to ensure we capture long URLs
+        # NTAG213: pages 4-39
+        # NTAG215: pages 4-129
+        # NTAG216: pages 4-225
+        # We'll try to read up to page 129 (NTAG215) to support longer URLs
+        for page in range(4, 130):
+            try:
+                read_cmd = self.READ_PAGE + [page, 0x04]  # Read 4 bytes
+                response, sw1, sw2 = connection.transmit(read_cmd)
+                
+                if sw1 == 0x90:
+                    all_data.extend(response)
+                    self.log_signal.emit("Debug", f"Page {page}: {self.toHexString(response)}")
+                else:
+                    # If we get an error, we've likely reached the end of the tag's memory
+                    self.log_signal.emit("Debug", f"Read stopped at page {page}: SW1={sw1:02X} SW2={sw2:02X}")
+                    break
+                    
+                # Check for end of NDEF message
+                if len(response) >= 4 and response[0] == 0xFE:
+                    self.log_signal.emit("Debug", "Found NDEF terminator, stopping read")
+                    break
+                    
+            except Exception as e:
+                self.log_signal.emit("Error", f"Error reading page {page}: {str(e)}")
+                break
+                
+        if not all_data:
+            self.log_signal.emit("Error", "No data read from tag")
+            
+        return all_data
+
     def on_tab_changed(self, index):
         """Handle tab change events."""
-        if index == 1 and self.scanning:  # Index 1 is Write Tags tab
+        if (index == 1 or index == 2) and self.scanning:  # Index 1 is Write Tags tab, Index 2 is Copy Tags tab
             self.toggle_scanning()  # Stop scanning when switching to write tab
+        if index == 2 and self.copying:  # Index 2 is Copy Tags tab
+            self.stop_copy_operation()  # Stop copying when switching away from copy tab
             
     def toggle_scanning(self):
         """Toggle the scanning process."""
@@ -1149,6 +1338,7 @@ class NFCReaderGUI(QMainWindow):
     def process_ndef_content(self, data: List[int]):
         """Process NDEF content and open URLs if found."""
         try:
+            self.source_tag_data = data  # Store the raw data for copying
             self.log_signal.emit("Debug", f"Raw data: {self.toHexString(data)}")
             
             if len(data) < 4:  # Need at least TLV header
@@ -1576,7 +1766,10 @@ class NFCReaderGUI(QMainWindow):
     @pyqtSlot(str)
     def update_write_status(self, text):
         """Update the write status label."""
-        self.write_status.setText(text)
+        try:
+            self.write_status.setText(text)
+        except RuntimeError:
+            pass  # Handle case where label might have been deleted
 
     @pyqtSlot(str)
     def update_progress(self, text):
@@ -1752,7 +1945,6 @@ class NFCReaderGUI(QMainWindow):
         text = self.write_entry.text().strip()
         
         # Enable/disable quick write button along with main write button
-        self.quick_write_button.setEnabled(False)
         
         # Update character count with more visible feedback
         remaining = 137 - len(text)  # NTAG213 URL capacity
@@ -1800,7 +1992,6 @@ class NFCReaderGUI(QMainWindow):
                 
             if url_valid:
                 self.write_button.setEnabled(True)
-                self.quick_write_button.setEnabled(True)
                 self.validation_label.setStyleSheet("""
                     color: #4CAF50;
                     font-weight: bold;
@@ -1866,13 +2057,11 @@ class NFCReaderGUI(QMainWindow):
     def setup_status_bar(self):
         """Setup enhanced status bar."""
         # Create permanent widgets for the status bar
-        self.reader_status = QLabel("No Reader")
+        # Removed reader_status as per requirements
         self.tag_status = QLabel("No Tag")
         self.theme_status = QLabel("Light Mode")
         
         # Add permanent widgets to status bar
-        self.status_bar.addPermanentWidget(self.reader_status)
-        self.status_bar.addPermanentWidget(QLabel("|"))  # Separator
         self.status_bar.addPermanentWidget(self.tag_status)
         self.status_bar.addPermanentWidget(QLabel("|"))  # Separator
         self.status_bar.addPermanentWidget(self.theme_status)
@@ -2092,6 +2281,228 @@ class NFCReaderGUI(QMainWindow):
                     self.write_status_signal.emit(f"Error: {error_msg}")
                 
             time.sleep(0.2)
+
+    def read_source_tag(self):
+        """Read a source tag for copying."""
+        if not self.reader:
+            QMessageBox.critical(self, "Error", "Reader not connected")
+            return
+
+        self.source_tag_data = None
+        self.copy_status_label.setText("Status: Please present source tag to read...")
+        self.source_tag_info.setText("Waiting for source tag...")
+        self.copy_button.setEnabled(False)
+        
+        # Start a thread to read the source tag with improved URL detection
+        threading.Thread(target=self.read_source_tag_thread, daemon=True).start()
+
+    def read_source_tag_thread(self):
+        """Thread function to read source tag."""
+        last_uid = None
+        timeout = time.time() + 30  # 30 second timeout
+        
+        while time.time() < timeout:
+            try:
+                if self.reader:
+                    connection, connected = self.connect_with_retry()
+                    if not connected:
+                        time.sleep(0.2)
+                        continue
+                    
+                    # Get UID
+                    response, sw1, sw2 = connection.transmit(self.GET_UID)
+                    if sw1 == 0x90:
+                        uid = self.toHexString(response)
+                        # Update UI
+                        self.copy_status_label.setText("Tag Detected - Reading...")
+                        self.update_copy_tag_status(True)
+                        
+                        # Only process if it's a new tag
+                        if uid != last_uid:
+                            last_uid = uid
+                            self.log_signal.emit("New tag detected", f"UID: {uid}")
+                            
+                            # Read tag memory
+                            # Use the extended read function to ensure we capture long URLs
+                            memory_data = self.read_tag_memory_full(connection)
+                            if memory_data:
+                                self.source_tag_data = memory_data
+                                self.log_signal.emit("Source tag", f"Read {len(memory_data)} bytes")
+                                
+                                # Extract URL or text from the tag data
+                                url = self.extract_url_from_data(memory_data)
+                                # Display the URL with better formatting for long URLs
+                                if url:
+                                    self.log_signal.emit("URL Detected", f"Found URL: {url}")
+                                    self.source_tag_info.setText(f"UID: {uid}\n\nURL Content:\n{url}")
+                                else:
+                                    self.log_signal.emit("Debug", "No URL found in tag data")
+                                    self.source_tag_info.setText(f"Source Tag UID: {uid}\nContent: Raw data ({len(memory_data)} bytes)")
+                                
+                                self.copy_status_label.setText("Source tag read successfully")
+                                self.copy_button.setEnabled(True)
+                                return
+                    
+                    connection.disconnect()
+            except Exception as e:
+                error_msg = str(e)
+                # Only log errors that aren't common disconnection messages
+                if not any(msg in error_msg.lower() for msg in [
+                    "card is not connected",
+                    "no smart card inserted",
+                    "card is unpowered"
+                ]):
+                    self.log_signal.emit("Error", f"Scan error: {error_msg}")
+                last_uid = None  # Reset UID on error
+                self.update_copy_tag_status(False)  # Update status when tag is removed/error
+                
+            time.sleep(0.2)  # Delay between scans
+        
+        # Timeout
+        self.copy_status_label.setText("Status: Timeout - No source tag detected")
+        self.source_tag_info.setText("No source tag scanned yet")
+
+    def extract_url_from_data(self, data):
+        """Extract URL from NDEF data if possible."""
+        try:
+            # Basic check for NDEF message
+            if len(data) < 8:  # Need minimum length for NDEF
+                return None
+                
+            # Look for NDEF TLV
+            for i in range(len(data) - 2):
+                if data[i] == 0x03:  # NDEF TLV
+                    length = data[i+1]
+                    if i + 2 + length > len(data):
+                        continue
+                        
+                    # Check for URL record with improved detection for long URLs
+                    for j in range(i+2, i+2+length-4):
+                        if data[j] == 0xD1 and data[j+3] == 0x55:  # URL record
+                            url_prefix_byte = data[j+5]
+                            url_prefixes = {
+                                0x00: "http://www.",
+                                0x01: "https://www.",
+                                0x02: "http://",
+                                0x03: "https://",
+                                0x04: "tel:",
+                                0x05: "mailto:",
+                            }
+                            prefix = url_prefixes.get(url_prefix_byte, "")
+                            
+                            # Calculate the correct end position for the URL content
+                            payload_length = data[j+2]
+                            url_end = j + 6 + payload_length - 1  # -1 for the prefix byte
+                            
+                            # Ensure we don't exceed array bounds
+                            if url_end > len(data):
+                                url_end = len(data)
+                                
+                            url_content = bytes(data[j+6:url_end]).decode('utf-8', errors='replace')
+                            return prefix + url_content.strip('\x00')  # Remove any null terminators
+                            
+                    # Check for Text record
+                    for j in range(i+2, i+2+length-4):
+                        if data[j] == 0xD1 and data[j+3] == 0x54:  # Text record
+                            lang_code_length = data[j+5] & 0x3F
+                            text_start = j+6+lang_code_length
+                            text_end = j+2+data[j+2]
+                            if text_start < text_end:
+                                return bytes(data[text_start:text_end]).decode('utf-8', errors='replace').strip('\x00')
+            return None
+        except Exception as e:
+            self.log_signal.emit("Error", f"Failed to extract URL: {str(e)}")
+            return None
+
+    def copy_to_new_tag(self):
+        """Copy source tag data to new tags."""
+        if not self.source_tag_data:
+            QMessageBox.critical(self, "Error", "No source tag data available")
+            return
+            
+        if not self.reader:
+            QMessageBox.critical(self, "Error", "Reader not connected")
+            return
+            
+        self.copying = True
+        self.copies_made = 0
+        self.stop_copy_button.setEnabled(True)
+        self.copy_button.setEnabled(False)
+        
+        # Display the URL being copied for confirmation
+        url = self.extract_url_from_data(self.source_tag_data)
+        self.read_source_button.setEnabled(False)
+        
+        quantity = self.copies_spinbox.value()
+        self.copy_progress_label.setText(f"Starting copy operation: 0/{quantity} tags written")
+        
+        # Start a thread to handle the copying
+        threading.Thread(target=self.copy_tags_thread, 
+                       args=(self.source_tag_data, quantity), 
+                       daemon=True).start()
+
+    def copy_tags_thread(self, source_data, quantity):
+        """Thread function to copy tags."""
+        # Reuse the batch_write_tags logic but with raw data
+        # This would be implemented similarly to batch_write_tags but using the source_data directly
+        url = self.extract_url_from_data(source_data)
+        
+        if url:
+            self.copy_status_label.setText(f"Ready to copy URL: {url}\nPlease present first target tag...")
+            self.log_signal.emit("Copy Operation", f"Copying URL: {url}")
+        else:
+            self.copy_status_label.setText("Ready to copy raw tag data\nPlease present first target tag...")
+            self.log_signal.emit("Copy Operation", "Copying raw tag data")
+        
+        # If we have a URL, use batch_write_tags to write it
+        # Otherwise, we would need to implement raw data copying
+        if not url:
+            self.log_signal.emit("Error", "Could not extract URL from source tag")
+            self.copy_status_label.setText("Error: Could not extract URL from source tag")
+            self.copying = False
+            self.stop_copy_button.setEnabled(False)
+            self.copy_button.setEnabled(True)
+            self.read_source_button.setEnabled(True)
+            return
+        self.batch_write_tags(url, quantity)
+        self.copying = False
+        self.stop_copy_button.setEnabled(False)
+        self.copy_button.setEnabled(True)
+        self.read_source_button.setEnabled(True)
+
+    def update_copy_tag_status(self, detected, locked=False):
+        """Update the copy tag status indicator."""
+        if detected:
+            if locked:
+                self.copy_tag_indicator.setStyleSheet("background-color: #4CAF50; border-radius: 7px;")  # Green
+                self.copy_tag_status_label.setText("Tag Detected & Locked ✓")
+            else:
+                self.copy_tag_indicator.setStyleSheet("background-color: #4CAF50; border-radius: 7px;")  # Green
+                self.copy_tag_status_label.setText("Tag Detected")
+        else:
+            self.copy_tag_indicator.setStyleSheet("background-color: #FF9800; border-radius: 7px;")  # Orange for no tag
+            self.copy_tag_status_label.setText("Waiting for Tag...")
+
+    def reset_copy_operation(self):
+        """Reset the copy operation."""
+        self.source_tag_data = None
+        self.source_tag_info.setText("No source tag scanned yet")
+        self.copy_progress_label.setText("")
+        self.copy_status_label.setText("Status: Operation reset")
+        self.copy_button.setEnabled(False)
+        self.read_source_button.setEnabled(True)
+        self.copying = False
+        self.stop_copy_button.setEnabled(False)
+        self.update_copy_tag_status(False)
+
+    def stop_copy_operation(self):
+        """Stop the ongoing copy operation."""
+        if self.copying:
+            self.copying = False
+            self.copy_status_label.setText("Status: Copy operation stopped")
+            self.stop_copy_button.setEnabled(False)
+            self.copy_button.setEnabled(True)
+            self.read_source_button.setEnabled(True)
 
 def main():
     app = QApplication(sys.argv)
