@@ -18,10 +18,11 @@ class AboutTab(QWidget):
     def setup_ui(self):
         """Setup the about tab interface."""
         layout = QVBoxLayout(self)
+        layout.setSpacing(15)  # Consistent spacing between major sections
         
         # Header section with app info
         header_group = QGroupBox("About NFC Reader/Writer")
-        header_layout = QVBoxLayout(header_group)
+        header_layout = QVBoxLayout(header_group) 
         
         # App icon
         icon_label = QLabel()
@@ -32,7 +33,7 @@ class AboutTab(QWidget):
         header_layout.addWidget(icon_label)
         
         # Version info
-        version_label = QLabel("Version 3.4")
+        version_label = QLabel("Version 3.5")
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         version_label.setStyleSheet("font-weight: bold; color: #1976d2; margin: 10px 0;")
         header_layout.addWidget(version_label)
@@ -51,6 +52,7 @@ class AboutTab(QWidget):
         
         # Attribution section
         attribution_group = QGroupBox("Attribution")
+        attribution_group.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         attribution_layout = QVBoxLayout(attribution_group)
         
         # Developer info with link
@@ -75,6 +77,7 @@ class AboutTab(QWidget):
         
         # User Manual section
         manual_group = QGroupBox("User Manual")
+        manual_group.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         manual_layout = QVBoxLayout(manual_group)
         
         manual_text = QTextEdit()
@@ -148,6 +151,7 @@ class AboutTab(QWidget):
         
         # Changelog section
         changelog_group = QGroupBox("Changelog")
+        changelog_group.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         changelog_layout = QVBoxLayout(changelog_group)
         
         changelog_text = QTextEdit()
@@ -168,6 +172,15 @@ class AboutTab(QWidget):
                 .fix { color: #d32f2f; }
                 .improve { color: #1976d2; }
             </style>
+            
+            <h4>Version 3.5 (February 2025)</h4>
+            <ul>
+                <li><span class='new'>NEW:</span> NFC Tag Type Detection</li>
+                <li><span class='new'>NEW:</span> Visual feedback animations for tag detection</li>
+                <li><span class='new'>NEW:</span> Progress bars for batch operations</li>
+                <li><span class='improve'>IMPROVE:</span> Unified status area across all tabs</li>
+                <li><span class='improve'>IMPROVE:</span> Responsive layout and consistent spacing</li>
+            </ul>
             
             <h4>Version 3.4 (February 2025)</h4>
             <ul>

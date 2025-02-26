@@ -5,7 +5,7 @@ NFC Writer functionality for the NFC Reader/Writer application.
 import time
 from typing import List, Tuple, Callable, Any, Optional
 
-from app.utils import GET_UID, LOCK_CARD
+from app.utils import GET_UID, LOCK_CARD, get_reader_specific_commands
 
 class NFCWriter:
     """Class to handle NFC writer operations."""
@@ -24,6 +24,7 @@ class NFCWriter:
     def write_url_to_tag(self, connection, url: str, lock: bool = True) -> Tuple[bool, str]:
         """
         Write a URL to an NFC tag.
+        Enhanced for better compatibility with different reader models.
         
         Args:
             connection: Active card connection
@@ -35,7 +36,12 @@ class NFCWriter:
         """
         try:
             # Verify tag presence with UID check
-            response, sw1, sw2 = connection.transmit(GET_UID)
+            # Get reader model to adjust writing strategy
+            reader_str = str(connection.getReader())
+            is_acr122u = "ACR122" in reader_str
+            commands = get_reader_specific_commands(reader_str)
+            
+            response, sw1, sw2 = connection.transmit(commands['GET_UID'])
             if sw1 != 0x90:
                 return False, f"Tag presence check failed: SW1={sw1:02X} SW2={sw2:02X}"
             
@@ -44,6 +50,10 @@ class NFCWriter:
             # Create NDEF message for URL
             ndef_data = self._create_url_ndef(url)
             
+            # ACR122U sometimes needs a small delay before initialization
+            if is_acr122u:
+                time.sleep(0.05)
+            
             # Initialize NDEF capability
             init_command = [0xFF, 0xD6, 0x00, 0x03, 0x04, 0xE1, 0x10, 0x06, 0x0F]
             response, sw1, sw2 = connection.transmit(init_command)
@@ -51,6 +61,10 @@ class NFCWriter:
                 return False, f"NDEF initialization failed: {sw1:02X} {sw2:02X}"
             
             # Write data in chunks of 4 bytes (one page at a time)
+            # ACR122U sometimes needs a small delay after initialization
+            if is_acr122u:
+                time.sleep(0.05)
+                
             chunk_size = 4
             for i in range(0, len(ndef_data), chunk_size):
                 chunk = ndef_data[i:i + chunk_size]
@@ -65,10 +79,18 @@ class NFCWriter:
                 
                 if sw1 != 0x90:
                     return False, f"Failed to write page {page}"
+                
+                # ACR122U may need a small delay between writes
+                if is_acr122u:
+                    time.sleep(0.02)
             
             # Lock the tag if requested
             if lock:
-                response, sw1, sw2 = connection.transmit(LOCK_CARD)
+                # ACR122U sometimes needs a small delay before locking
+                if is_acr122u:
+                    time.sleep(0.1)
+                    
+                response, sw1, sw2 = connection.transmit(commands['LOCK_CARD'])
                 if sw1 != 0x90:
                     return False, "Failed to lock tag"
                 return True, f"URL written to tag {uid} and locked"
@@ -175,7 +197,9 @@ class NFCWriter:
                     continue
                     
                 # Get UID to check if it's a new tag
-                response, sw1, sw2 = connection.transmit(GET_UID)
+                reader_str = str(connection.getReader())
+                commands = get_reader_specific_commands(reader_str)
+                response, sw1, sw2 = connection.transmit(commands['GET_UID'])
                 if sw1 == 0x90:
                     uid = self.toHexString(response)
                     if uid != last_uid:  # Only write to new tags

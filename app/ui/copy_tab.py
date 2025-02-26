@@ -4,7 +4,7 @@ Copy Tab UI components for the NFC Reader/Writer application.
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                             QPushButton, QSpinBox, QCheckBox, QGroupBox,
-                            QSizePolicy, QGridLayout)
+                            QSizePolicy, QGridLayout, QProgressBar)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
@@ -25,6 +25,7 @@ class CopyTab(QWidget):
     def setup_ui(self):
         """Setup the copy tab interface."""
         layout = QVBoxLayout(self)
+        layout.setSpacing(15)  # Consistent spacing between major sections
         
         # Status section
         self.copy_status_label = QLabel("Status: Waiting for reader...")
@@ -38,7 +39,7 @@ class CopyTab(QWidget):
         # Source tag section
         source_group = QGroupBox("Source Tag")
         source_layout = QVBoxLayout(source_group)
-        
+        source_layout.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         # Source tag info with improved display for long URLs
         source_layout.addWidget(QLabel("Source Tag Content:"))
         self.source_tag_info = QLabel("No source tag scanned yet")
@@ -66,7 +67,7 @@ class CopyTab(QWidget):
         # Copy configuration section
         copy_config_group = QGroupBox("Copy Configuration")
         copy_config_layout = QVBoxLayout(copy_config_group)
-        
+        copy_config_layout.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         # Number of copies
         # Use grid layout instead of horizontal layout for better responsiveness
         copies_grid = QGridLayout()
@@ -95,15 +96,25 @@ class CopyTab(QWidget):
         # Copy operation section
         copy_op_group = QGroupBox("Copy Operation")
         copy_op_layout = QVBoxLayout(copy_op_group)
+        copy_op_layout.setContentsMargins(15, 15, 15, 15)  # Consistent padding
+        copy_op_layout.setSpacing(10)  # Consistent spacing
         
-        # Progress indicator
-        self.copy_progress_label = QLabel("")
-        self.copy_progress_label.setWordWrap(True)
-        self.copy_progress_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        copy_op_layout.addWidget(self.copy_progress_label)
+        # Progress section with label and progress bar
+        progress_widget = QWidget()
+        progress_layout = QVBoxLayout(progress_widget)
+        progress_layout.setContentsMargins(0, 0, 0, 0)
+        progress_layout.setSpacing(5)  # Tight spacing between label and bar
         
-        # Buttons container
-        # Use a grid layout instead of horizontal layout for better responsiveness
+        self.copy_progress_label = QLabel("Ready")
+        progress_layout.addWidget(self.copy_progress_label)
+        
+        # Add progress bar
+        self.copy_progress_bar = QProgressBar()
+        self.copy_progress_bar.setRange(0, 100)
+        self.copy_progress_bar.setValue(0)
+        self.copy_progress_bar.setTextVisible(True)
+        progress_layout.addWidget(self.copy_progress_bar)
+        
         button_grid = QGridLayout()
         button_grid.setContentsMargins(0, 8, 0, 0)
         button_grid.setSpacing(12)
@@ -173,6 +184,7 @@ class CopyTab(QWidget):
         tag_status_grid.addWidget(self.copy_tag_indicator, 0, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         tag_status_grid.addWidget(self.copy_tag_status_label, 0, 1, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         
+        copy_op_layout.addWidget(progress_widget)
         copy_op_layout.addLayout(tag_status_grid)
         
         layout.addWidget(copy_op_group)
@@ -205,6 +217,15 @@ class CopyTab(QWidget):
     def update_progress(self, text):
         """Update the progress label."""
         self.copy_progress_label.setText(text)
+        
+    def update_progress_bar(self, current, total):
+        """Update the progress bar with current progress."""
+        if total <= 0:
+            self.copy_progress_bar.setValue(0)
+            return
+            
+        percentage = int((current / total) * 100)
+        self.copy_progress_bar.setValue(percentage)
     
     def update_tag_status(self, detected, locked=False):
         """Update the tag status indicator."""

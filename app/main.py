@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+"""
+Main entry point for the NFC Reader/Writer application v3.5.
+"""
 import sys
 from PyQt6.QtWidgets import QApplication
 from app.gui import NFCReaderGUI

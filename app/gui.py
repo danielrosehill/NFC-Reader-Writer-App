@@ -10,9 +10,9 @@ import urllib.request
 from typing import Optional, List, Tuple
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget, 
-                            QMessageBox, QApplication, QLabel)
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot, QByteArray, QSize
-from PyQt6.QtGui import QFont, QIcon, QPixmap, QKeySequence, QShortcut, QColor
+                            QMessageBox, QApplication, QLabel, QHBoxLayout)
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot, QByteArray, QSize, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QFont, QIcon, QPixmap, QKeySequence, QShortcut, QColor, QPalette
 
 from app.ui.read_tab import ReadTab
 from app.ui.write_tab import WriteTab
@@ -31,12 +31,13 @@ class NFCReaderGUI(QMainWindow):
     log_signal = pyqtSignal(str, str)
     write_status_signal = pyqtSignal(str)
     progress_signal = pyqtSignal(str)
+    progress_value_signal = pyqtSignal(int, int)  # current, total
     url_signal = pyqtSignal(str)
     
     def __init__(self):
         """Initialize the main application window."""
         super().__init__()
-        self.setWindowTitle("NFC Reader/Writer v3.3")
+        self.setWindowTitle("NFC Reader/Writer v3.5")
         
         # Initialize theme state
         self.dark_mode = False
@@ -94,6 +95,7 @@ class NFCReaderGUI(QMainWindow):
         self.write_status_signal.connect(self.update_write_status)
         self.progress_signal.connect(self.update_progress)
         self.url_signal.connect(self.update_url_label)
+        self.progress_value_signal.connect(self.update_progress_bar)
         
         # Start checking for reader
         self.check_reader_timer = QTimer()
@@ -107,6 +109,9 @@ class NFCReaderGUI(QMainWindow):
         
         # Apply light theme by default
         self.apply_light_theme()
+        
+        # Create unified status bar
+        self.setup_unified_status_area()
     
     def setup_ui(self):
         """Setup the main user interface."""
@@ -235,6 +240,43 @@ class NFCReaderGUI(QMainWindow):
         self.status_bar.addPermanentWidget(self.theme_status)
         
         # Style the status bar
+        self.status_bar.setStyleSheet("""
+            QStatusBar {
+                border-top: 1px solid #d0d0d0;
+            }
+            QLabel {
+                padding: 3px 6px;
+            }
+        """)
+    
+    def setup_unified_status_area(self):
+        """Setup a unified status area that appears in all tabs."""
+        # Create a widget to hold the unified status area
+        self.unified_status_widget = QWidget()
+        self.unified_status_layout = QHBoxLayout(self.unified_status_widget)
+        self.unified_status_layout.setContentsMargins(10, 5, 10, 5)
+        self.unified_status_layout.setSpacing(10)
+        
+        # Reader status indicator
+        self.reader_indicator = QLabel()
+        self.reader_indicator.setFixedSize(15, 15)
+        self.reader_indicator.setStyleSheet("background-color: #FFA500; border-radius: 7px;")
+        
+        # Reader status text
+        self.reader_status_text = QLabel("Reader: Not Connected")
+        
+        # Tag type indicator
+        self.tag_type_label = QLabel("Tag Type: Unknown")
+        self.tag_type_label.setStyleSheet("color: #1976d2; font-weight: bold;")
+        
+        # Add to layout
+        self.unified_status_layout.addWidget(self.reader_indicator)
+        self.unified_status_layout.addWidget(self.reader_status_text)
+        self.unified_status_layout.addWidget(self.tag_type_label)
+        self.unified_status_layout.addStretch()
+        
+        # Add to main window at the top
+        self.centralWidget().layout().insertWidget(0, self.unified_status_widget)
         self.status_bar.setStyleSheet("""
             QStatusBar {
                 border-top: 1px solid #d0d0d0;
@@ -472,7 +514,17 @@ class NFCReaderGUI(QMainWindow):
         if result:
             self.read_tab.update_status(f"Status: {message}")
             self.status_bar.showMessage(f"{message} and ready")
+            self.reader_status_text.setText(f"Reader: {message}")
+            self.reader_indicator.setStyleSheet("background-color: #4CAF50; border-radius: 7px;")  # Green
+            
+            # Animate the reader indicator
+            self.animate_indicator(self.reader_indicator)
         else:
+            self.reader_status_text.setText("Reader: Not Connected")
+            self.reader_indicator.setStyleSheet("background-color: #FFA500; border-radius: 7px;")  # Orange
+            self.tag_type_label.setText("Tag Type: Unknown")
+            
+            # Update status messages
             self.read_tab.update_status(f"Status: {message}")
             self.status_bar.showMessage("Reader not found - Please connect an NFC reader")
     
@@ -483,6 +535,19 @@ class NFCReaderGUI(QMainWindow):
         if index == 2 and self.nfc_copier.copying:  # Index 2 is Copy Tags tab
             self.stop_copy_operation()  # Stop copying when switching away from copy tab
     
+    def animate_indicator(self, indicator):
+        """Create a pulsing animation for an indicator."""
+        # Create animation for size
+        self.pulse_animation = QPropertyAnimation(indicator, b"size")
+        self.pulse_animation.setDuration(300)
+        self.pulse_animation.setStartValue(QSize(15, 15))
+        self.pulse_animation.setEndValue(QSize(18, 18))
+        self.pulse_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        
+        # Make it pulse by going back and forth
+        self.pulse_animation.finished.connect(lambda: self.pulse_animation.setDirection(
+            QPropertyAnimation.Direction.Backward if self.pulse_animation.direction() == QPropertyAnimation.Direction.Forward else QPropertyAnimation.Direction.Forward))
+        self.pulse_animation.start()
     def toggle_scanning(self, start_scanning=None):
         """Toggle the scanning process."""
         if start_scanning is None:
@@ -526,10 +591,19 @@ class NFCReaderGUI(QMainWindow):
                     uid = self.nfc_reader.get_tag_uid(connection)
                     if uid:
                         # Update UI via signals
-                        self.status_signal.emit("Tag Ready")
+                        self.status_signal.emit("Tag Ready")                        
                         self.write_status_signal.emit("Tag Ready - Click Write to proceed")
                         self.write_tab.update_tag_status(True)
                         self.tag_status.setText("Tag Present")  # Update status bar
+                        
+                        # Detect tag type
+                        tag_type = self.nfc_reader.detect_tag_type(connection)
+                        self.tag_type_label.setText(f"Tag Type: {tag_type}")
+                        
+                        # Animate tag indicator in write tab
+                        if hasattr(self.write_tab, 'tag_indicator'):
+                            self.animate_indicator(self.write_tab.tag_indicator)
+                            
                         last_activity_time = time.time()
                         
                         # Only process if it's a new tag
@@ -657,6 +731,11 @@ class NFCReaderGUI(QMainWindow):
         """Update the progress label."""
         self.write_tab.update_progress(text)
     
+    @pyqtSlot(int, int)
+    def update_progress_bar(self, current, total):
+        """Update the progress bar."""
+        self.write_tab.update_progress_bar(current, total)
+    
     @pyqtSlot(str)
     def update_url_label(self, text):
         """Update the URL label."""
@@ -728,7 +807,8 @@ class NFCReaderGUI(QMainWindow):
     
     def on_write_progress(self, tags_written, total):
         """Callback for write progress updates."""
-        self.progress_signal.emit(f"Progress: {tags_written}/{total} tags written")
+        self.progress_signal.emit(f"{tags_written}/{total} tags written")
+        self.progress_value_signal.emit(tags_written, total)
     
     def on_write_status(self, text):
         """Callback for write status updates."""
@@ -844,7 +924,8 @@ class NFCReaderGUI(QMainWindow):
     
     def on_copy_progress(self, current, total):
         """Callback for copy progress updates."""
-        self.copy_tab.update_progress(f"Progress: {current}/{total} tags written")
+        self.copy_tab.update_progress(f"{current}/{total} tags written")
+        self.copy_tab.update_progress_bar(current, total)
         
         # If all copies are done, update UI
         if current == total:

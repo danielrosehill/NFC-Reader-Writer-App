@@ -11,9 +11,15 @@ import ssl
 from typing import Optional, List, Tuple
 
 # APDU Commands
+# Standard PC/SC commands that work with most readers
 GET_UID = [0xFF, 0xCA, 0x00, 0x00, 0x00]
 READ_PAGE = [0xFF, 0xB0, 0x00]  # Will append page number and length
 LOCK_CARD = [0xFF, 0xD6, 0x00, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00]
+
+# Alternative commands for specific readers
+# Some ACR122U readers might need these alternative commands
+ALT_GET_UID = [0xFF, 0xCA, 0x00, 0x00, 0x04]  # With explicit length
+ALT_READ_PAGE = [0xFF, 0xB0, 0x00]  # Same as READ_PAGE but might be used differently
 
 # URL prefixes according to NFC Forum URI Record Type Definition
 URL_PREFIXES = {
@@ -53,6 +59,31 @@ URL_PREFIXES = {
     0x21: "urn:epc:",
     0x22: "urn:nfc:",
 }
+
+def get_reader_specific_commands(reader_str: str) -> dict:
+    """
+    Get reader-specific commands based on the reader model.
+    
+    Args:
+        reader_str: String representation of the reader
+        
+    Returns:
+        dict: Dictionary of commands for the specific reader
+    """
+    commands = {
+        'GET_UID': GET_UID,
+        'READ_PAGE': READ_PAGE,
+        'LOCK_CARD': LOCK_CARD
+    }
+    
+    # ACR122U might need alternative commands in some cases
+    if "ACR122" in reader_str:
+        # For now, we're using the standard commands as they should work,
+        # but we have alternatives available if needed
+        # commands['GET_UID'] = ALT_GET_UID
+        pass
+        
+    return commands
 
 def open_url_in_browser(url: str) -> bool:
     """

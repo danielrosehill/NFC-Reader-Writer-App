@@ -5,7 +5,7 @@ NFC Tag Copying functionality for the NFC Reader/Writer application.
 import time
 from typing import List, Tuple, Callable, Optional, Any
 
-from app.utils import GET_UID, extract_url_from_data
+from app.utils import GET_UID, extract_url_from_data, get_reader_specific_commands
 from app.reader import NFCReader
 from app.writer import NFCWriter
 
@@ -68,8 +68,10 @@ class NFCCopier:
                 # Get UID with retry for reliability
                 uid = None
                 for retry in range(self.max_retries):
+                    reader_str = str(connection.getReader())
+                    commands = get_reader_specific_commands(reader_str)
                     try:
-                        response, sw1, sw2 = connection.transmit(GET_UID)
+                        response, sw1, sw2 = connection.transmit(commands['GET_UID'])
                         if sw1 == 0x90:
                             uid = self.reader.toHexString(response)
                             break
@@ -261,8 +263,10 @@ class NFCCopier:
                 # Get UID with retry for reliability
                 uid = None
                 for retry in range(self.max_retries):
+                    reader_str = str(connection.getReader())
+                    commands = get_reader_specific_commands(reader_str)
                     try:
-                        response, sw1, sw2 = connection.transmit(GET_UID)
+                        response, sw1, sw2 = connection.transmit(commands['GET_UID'])
                         if sw1 == 0x90:
                             uid = self.reader.toHexString(response)
                             break

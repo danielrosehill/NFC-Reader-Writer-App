@@ -4,7 +4,7 @@ Write Tab UI components for the NFC Reader/Writer application.
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                             QPushButton, QLineEdit, QSpinBox, QCheckBox, 
-                            QGroupBox, QSizePolicy, QComboBox)
+                            QGroupBox, QSizePolicy, QComboBox, QProgressBar)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
@@ -27,7 +27,7 @@ class WriteTab(QWidget):
     def setup_ui(self):
         """Setup the write tab interface."""
         layout = QVBoxLayout(self)
-        
+        layout.setSpacing(15)  # Consistent spacing between major sections
         # Input section
         input_group = QGroupBox("Tag Content")
         input_layout = QVBoxLayout(input_group)
@@ -49,8 +49,8 @@ class WriteTab(QWidget):
         # Input container with buttons
         input_container = QWidget()
         input_container_layout = QHBoxLayout(input_container)
-        input_container_layout.setContentsMargins(4, 4, 4, 4)  # Tighter margins
-        input_container_layout.setSpacing(4)  # Reduce spacing between elements
+        input_container_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins for better spacing
+        input_container_layout.setSpacing(8)  # Consistent spacing between elements
         
         # Recent URLs dropdown
         self.url_combo = QComboBox()
@@ -140,7 +140,7 @@ class WriteTab(QWidget):
         # Batch writing section
         batch_widget = QWidget()
         batch_layout = QHBoxLayout(batch_widget)
-        batch_layout.setContentsMargins(0, 0, 0, 0)
+        batch_layout.setContentsMargins(0, 10, 0, 0)  # Add top padding for separation
         
         quantity_label = QLabel("Number of tags to write:")
         self.quantity_spinbox = QSpinBox() 
@@ -157,7 +157,7 @@ class WriteTab(QWidget):
         # Options section
         options_group = QGroupBox("Writing Options")
         options_layout = QHBoxLayout(options_group)
-        
+        options_layout.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         self.lock_checkbox = QCheckBox("Lock tag after writing")
         self.lock_checkbox.setChecked(True)
         options_layout.addWidget(self.lock_checkbox)
@@ -191,14 +191,25 @@ class WriteTab(QWidget):
         """)
         status_layout = QHBoxLayout(status_group)
         status_layout.setContentsMargins(16, 24, 16, 16)
-        status_layout.setSpacing(16)
+        status_layout.setSpacing(16)  # Consistent spacing
 
-        # Progress label
-        self.progress_label = QLabel("")
-        status_layout.addWidget(self.progress_label)
+        # Progress section with label and progress bar
+        progress_widget = QWidget()
+        progress_layout = QVBoxLayout(progress_widget)
+        progress_layout.setContentsMargins(0, 0, 0, 0)
+        progress_layout.setSpacing(5)  # Tight spacing between label and bar
         
-        # Add spacer
-        status_layout.addSpacing(20)
+        self.progress_label = QLabel("Ready")
+        progress_layout.addWidget(self.progress_label)
+        
+        # Add progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        progress_layout.addWidget(self.progress_bar)
+        
+        status_layout.addWidget(progress_widget)
         
         # Tag detection status
         tag_status_widget = QWidget()
@@ -325,6 +336,15 @@ class WriteTab(QWidget):
     def update_progress(self, text):
         """Update the progress label."""
         self.progress_label.setText(text)
+        
+    def update_progress_bar(self, current, total):
+        """Update the progress bar with current progress."""
+        if total <= 0:
+            self.progress_bar.setValue(0)
+            return
+            
+        percentage = int((current / total) * 100)
+        self.progress_bar.setValue(percentage)
     
     def get_url(self):
         """Get the current URL text."""

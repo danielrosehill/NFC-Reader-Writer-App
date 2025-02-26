@@ -26,6 +26,7 @@ class ReadTab(QWidget):
     def setup_ui(self):
         """Setup the read tab interface."""
         layout = QVBoxLayout(self)
+        layout.setSpacing(15)  # Consistent spacing between major sections
         
         # Status section with modern card-like design
         # Simplified status label with better compact view support
@@ -45,6 +46,7 @@ class ReadTab(QWidget):
         
         # URL Detection group
         url_group = QGroupBox("Detected URL")
+        url_group.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         url_layout = QHBoxLayout(url_group)
         self.url_label = QLabel("")
         self.url_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -81,6 +83,7 @@ class ReadTab(QWidget):
         
         # Log group with debug toggle
         log_group = QGroupBox("Log")
+        log_group.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         log_layout = QVBoxLayout(log_group)
         
         # Add debug mode toggle
@@ -113,7 +116,7 @@ class ReadTab(QWidget):
         # Button container with improved styling
         button_container = QWidget()
         button_layout = QHBoxLayout(button_container)
-        button_layout.setContentsMargins(0, 8, 0, 0)
+        button_layout.setContentsMargins(0, 10, 0, 0)  # Add top padding for separation
         button_layout.setSpacing(12)
         
         # Copy and Clear buttons with icons and tooltips
