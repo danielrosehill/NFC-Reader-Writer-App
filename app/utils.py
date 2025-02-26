@@ -3,6 +3,7 @@ Utility functions and constants for the NFC Reader/Writer application.
 """
 
 import re
+import string
 import subprocess
 import time
 import urllib.request
@@ -95,39 +96,36 @@ def open_url_in_browser(url: str) -> bool:
     Returns:
         bool: True if successful, False otherwise
     """
+    # Add http:// prefix to URLs that don't have a protocol
     if not url.startswith(("http://", "https://")):
-        return False
+        # Check if it's an IP address or domain
+        if re.match(r'^(\d{1,3}\.){3}\d{1,3}(:\d+)?', url) or '.' in url:
+            url = "http://" + url
+        else:
+            return False  # Not a URL we can open
         
     try:
-        # Try google-chrome first with timeout
-        process = subprocess.Popen(['google-chrome', url], 
-                                start_new_session=True)
+        # Use a safer approach with subprocess.run instead of Popen
+        # First try xdg-open which is more stable
         try:
-            process.wait(timeout=3)
+            subprocess.run(['xdg-open', url], 
+                          check=False, 
+                          stdout=subprocess.DEVNULL, 
+                          stderr=subprocess.DEVNULL,
+                          start_new_session=True,
+                          timeout=1)
             return True
-        except subprocess.TimeoutExpired:
-            # Process started but didn't exit - this is normal
-            return True
-    except FileNotFoundError:
-        try:
-            # Fallback to chrome if google-chrome not found
-            process = subprocess.Popen(['chrome', url], 
-                                    start_new_session=True)
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            # Fallback to google-chrome
             try:
-                process.wait(timeout=3)
+                subprocess.run(['google-chrome', '--new-window', url], 
+                              check=False, 
+                              stdout=subprocess.DEVNULL, 
+                              stderr=subprocess.DEVNULL,
+                              start_new_session=True,
+                              timeout=1)  
                 return True
-            except subprocess.TimeoutExpired:
-                return True
-        except FileNotFoundError:
-            # Last resort fallback to xdg-open
-            try:
-                process = subprocess.Popen(['xdg-open', url], 
-                                        start_new_session=True)
-                try:
-                    process.wait(timeout=3)
-                    return True
-                except subprocess.TimeoutExpired:
-                    return True
+                
             except Exception:
                 return False
     except Exception:
@@ -205,7 +203,18 @@ def extract_url_from_data(data: List[int], toHexString) -> Optional[str]:
                             url_end = len(data)
                             
                         url_content = bytes(data[j+6:url_end]).decode('utf-8', errors='replace')
-                        return prefix + url_content.strip('\x00')  # Remove any null terminators
+                        
+                        # Fix for URLs starting with 10.0.0.1
+                        if url_content.startswith("0.0.0.1"):
+                            url_content = "10.0.0.1" + url_content[7:]
+                        
+                        # Clean up the URL by removing any non-printable or special characters
+                        cleaned_url = ""
+                        for char in url_content:
+                            if char in string.printable and char != '':
+                                cleaned_url += char
+                        
+                        return prefix + cleaned_url.strip()  # Return cleaned URL
                         
                 # Check for Text record
                 for j in range(i+2, i+2+length-4):
@@ -214,7 +223,19 @@ def extract_url_from_data(data: List[int], toHexString) -> Optional[str]:
                         text_start = j+6+lang_code_length
                         text_end = j+2+data[j+2]
                         if text_start < text_end:
-                            return bytes(data[text_start:text_end]).decode('utf-8', errors='replace').strip('\x00')
+                            text_content = bytes(data[text_start:text_end]).decode('utf-8', errors='replace').strip('\x00')
+                            
+                            # Fix for URLs starting with 10.0.0.1
+                            if text_content.startswith("0.0.0.1"):
+                                text_content = "10.0.0.1" + text_content[7:]
+                            
+                            # Clean up the text by removing any non-printable or special characters
+                            cleaned_text = ""
+                            for char in text_content:
+                                if char in string.printable and char != '':
+                                    cleaned_text += char
+                            
+                            return cleaned_text.strip()
         return None
     except Exception:
         return None

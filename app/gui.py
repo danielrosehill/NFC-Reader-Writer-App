@@ -597,8 +597,14 @@ class NFCReaderGUI(QMainWindow):
                         self.tag_status.setText("Tag Present")  # Update status bar
                         
                         # Detect tag type
-                        tag_type = self.nfc_reader.detect_tag_type(connection)
-                        self.tag_type_label.setText(f"Tag Type: {tag_type}")
+                        try:
+                            tag_type = self.nfc_reader.detect_tag_type(connection)
+                            self.tag_type_label.setText(f"Tag Type: {tag_type}")
+                        except Exception as e:
+                            # Handle exception during tag type detection
+                            if self.debug_mode:
+                                self.append_log("Error", f"Tag type detection failed: {str(e)}")
+                            self.tag_type_label.setText("Tag Type: Unknown")
                         
                         # Animate tag indicator in write tab
                         if hasattr(self.write_tab, 'tag_indicator'):
@@ -612,9 +618,14 @@ class NFCReaderGUI(QMainWindow):
                             self.append_log("New tag detected", f"UID: {uid}")
                             
                             # Read tag memory
-                            memory_data = self.nfc_reader.read_tag_memory(connection)
-                            if memory_data:
-                                self.process_ndef_content(memory_data)
+                            try:
+                                memory_data = self.nfc_reader.read_tag_memory(connection)
+                                if memory_data:
+                                    self.process_ndef_content(memory_data)
+                            except Exception as e:
+                                # Handle exception during tag memory reading
+                                if self.debug_mode:
+                                    self.append_log("Error", f"Failed to read tag memory: {str(e)}")
                     
                     connection.disconnect()
             except Exception as e:
@@ -640,12 +651,19 @@ class NFCReaderGUI(QMainWindow):
                 self.append_log("URL Detected", f"Found URL: {url}")
                 self.url_signal.emit(url)
                 
-                # Try to open URL in Chrome
-                if url.startswith(("http://", "https://")):
-                    if open_url_in_browser(url):
-                        self.append_log("System", "Opening URL in browser")
-                    else:
-                        self.append_log("Error", "Failed to open URL in browser")
+                # Open URL in browser in a separate thread to prevent blocking UI
+                def open_url_thread():
+                    try:
+                        if open_url_in_browser(url):
+                            self.log_signal.emit("System", "Opening URL in browser")
+                        else:
+                            self.log_signal.emit("Error", f"Failed to open URL in browser: {url}")
+                    except Exception as e:
+                        self.log_signal.emit("Error", f"Error opening URL: {str(e)}")
+                
+                # Start the thread
+                threading.Thread(target=open_url_thread, daemon=True).start()
+                
         except Exception as e:
             self.append_log("Error", f"Error parsing NDEF: {str(e)}")
     
@@ -713,33 +731,69 @@ class NFCReaderGUI(QMainWindow):
         if not self.debug_mode and title not in ["Error", "URL Detected", "System", "Text Record"]:
             return
         
-        timestamp = time.strftime("%H:%M:%S", time.localtime())
-        self.read_tab.append_log(title, message, timestamp, self._get_title_color(title))
+        try:
+            # Check if the read tab still exists
+            if hasattr(self, 'read_tab') and self.read_tab is not None:
+                timestamp = time.strftime("%H:%M:%S", time.localtime())
+                self.read_tab.append_log(title, message, timestamp, self._get_title_color(title))
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     @pyqtSlot(str)
     def update_status_label(self, text):
         """Update the status label."""
-        self.read_tab.update_status(text)
+        try:
+            # Check if the read tab still exists
+            if hasattr(self, 'read_tab') and self.read_tab is not None:
+                self.read_tab.update_status(text)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     @pyqtSlot(str)
     def update_write_status(self, text):
         """Update the write status label."""
-        self.write_tab.update_write_status(text)
+        try:
+            # Check if the write tab still exists
+            if hasattr(self, 'write_tab') and self.write_tab is not None:
+                self.write_tab.update_write_status(text)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     @pyqtSlot(str)
     def update_progress(self, text):
         """Update the progress label."""
-        self.write_tab.update_progress(text)
+        try:
+            # Check if the write tab still exists
+            if hasattr(self, 'write_tab') and self.write_tab is not None:
+                self.write_tab.update_progress(text)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     @pyqtSlot(int, int)
     def update_progress_bar(self, current, total):
         """Update the progress bar."""
-        self.write_tab.update_progress_bar(current, total)
+        try:
+            # Check if the write tab still exists
+            if hasattr(self, 'write_tab') and self.write_tab is not None:
+                self.write_tab.update_progress_bar(current, total)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     @pyqtSlot(str)
     def update_url_label(self, text):
         """Update the URL label."""
-        self.read_tab.update_url(text)
+        try:
+            # Check if the read tab still exists
+            if hasattr(self, 'read_tab') and self.read_tab is not None:
+                self.read_tab.update_url(text)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     def write_tag(self):
         """Write data to multiple tags."""

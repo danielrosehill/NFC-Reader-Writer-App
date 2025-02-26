@@ -194,16 +194,26 @@ class NFCReader:
             # NTAG216: 222 pages (888 bytes)
             
             # Try reading page 40 (just beyond NTAG213)
-            read_cmd = commands['READ_PAGE'] + [40, 0x04]
-            response, sw1, sw2 = connection.transmit(read_cmd)
-            if sw1 != 0x90:
+            try:
+                read_cmd = commands['READ_PAGE'] + [40, 0x04]
+                response, sw1, sw2 = connection.transmit(read_cmd)
+                if sw1 != 0x90:
+                    self.tag_type = "NTAG213"
+                    return "NTAG213"
+                    
+                # If we can read page 40, it's at least NTAG215 or NTAG216
+                self.tag_type = "NTAG215/216"
+                return "NTAG215/216"
+            except Exception as e:
+                # If reading page 40 fails with an exception, assume it's NTAG213
+                if self.debug_callback:
+                    self.debug_callback("Debug", f"Error reading page 40: {str(e)}, assuming NTAG213")
                 self.tag_type = "NTAG213"
                 return "NTAG213"
-                
-            # If we can read page 40, it's at least NTAG215 or NTAG216
-            self.tag_type = "NTAG215/216"
-            return "NTAG215/216"
-        except Exception:
+        except Exception as e:
+            if self.debug_callback:
+                self.debug_callback("Error", f"Tag type detection failed: {str(e)}")
+            self.tag_type = "Unknown"
             return "Unknown"
     
     def read_tag_memory(self, connection) -> List[int]:
