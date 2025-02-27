@@ -22,3 +22,7 @@ env/
 .DS_Store
 Thumbs.db
 .aider*
+
+# Backup files
+backups/
+*.tar.gz
