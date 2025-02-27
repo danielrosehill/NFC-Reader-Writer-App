@@ -37,7 +37,7 @@ class NFCReaderGUI(QMainWindow):
     def __init__(self):
         """Initialize the main application window."""
         super().__init__()
-        self.setWindowTitle("NFC Reader/Writer v3.5")
+        self.setWindowTitle("NFC Reader/Writer v3.6")
         
         # Initialize theme state
         self.dark_mode = False
@@ -85,7 +85,7 @@ class NFCReaderGUI(QMainWindow):
         # Setup status bar with additional info
         self.setup_status_bar()
         
-        self.setMinimumSize(800, 600)  # Smaller minimum size but still usable
+        self.setMinimumSize(600, 500)  # Set minimum window size
         self.setWindowIcon(QIcon('launcher-icon/acr_1252.ico'))
         self.debug_mode = False  # Debug mode disabled by default
         
@@ -133,14 +133,14 @@ class NFCReaderGUI(QMainWindow):
                 margin-top: -1px;
             }
             QTabBar::tab {
-                padding: 16px 40px;
-                margin-right: 4px;
+                padding: 10px 20px;
+                margin-right: 2px;
                 border-top-left-radius: 8px;
                 border-top-right-radius: 8px;
                 border: 1px solid #e0e0e0;
                 border-bottom: none;
                 background: #f5f5f5;
-                font-size: 14px;
+                font-size: 13px;
             }
             QTabBar::tab:selected {
                 background: white;

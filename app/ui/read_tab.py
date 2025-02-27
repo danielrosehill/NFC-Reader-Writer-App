@@ -26,7 +26,7 @@ class ReadTab(QWidget):
     def setup_ui(self):
         """Setup the read tab interface."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)  # Consistent spacing between major sections
+        layout.setSpacing(10)  # Reduced spacing between major sections
         
         # Status section with modern card-like design
         # Simplified status label with better compact view support
@@ -41,112 +41,87 @@ class ReadTab(QWidget):
         # Scan button
         self.scan_button = QPushButton("Start Scanning")
         self.scan_button.clicked.connect(self._on_scan_button_clicked)
-        self.scan_button.setFixedWidth(200)
+        self.scan_button.setFixedWidth(150)  # Smaller width
         layout.addWidget(self.scan_button, alignment=Qt.AlignmentFlag.AlignCenter)
         
         # URL Detection group
         url_group = QGroupBox("Detected URL")
-        url_group.setContentsMargins(15, 15, 15, 15)  # Consistent padding
+        url_group.setContentsMargins(10, 10, 10, 10)  # Reduced padding
         url_layout = QHBoxLayout(url_group)
         self.url_label = QLabel("")
-        self.url_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.url_label.setStyleSheet("""
             QLabel {
                 font-family: 'Segoe UI';
-                font-size: 12px;
+                font-size: 11px;
                 color: #1976D2;
-                padding: 8px;
-                background-color: #E3F2FD;
+                padding: 5px;
+                border: 1px solid #e0e0e0;
                 border-radius: 4px;
+                background-color: #f5f5f5;
+                min-height: 30px;
             }
         """)
-        self.copy_url_button = QPushButton("📋")
-        self.copy_url_button.setToolTip("Copy URL to clipboard")
-        self.copy_url_button.clicked.connect(self._on_copy_url_clicked)
-        self.copy_url_button.setFixedSize(40, 40)
-        self.copy_url_button.setStyleSheet("""
-            QPushButton { 
-                color: #1976d2;
-                background-color: white;
-                border: 1px solid #1976d2;
-                border-radius: 20px;
-                font-size: 20px;
-                padding: 0;
-            }
-            QPushButton:hover {
-                background-color: #e3f2fd;
-            }
-        """)
+        self.url_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.url_label.setWordWrap(True)
+        self.url_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.url_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        
         url_layout.addWidget(self.url_label)
+        
+        # Add copy button for URL
+        self.copy_url_button = QPushButton("Copy")
+        self.copy_url_button.setToolTip("Copy URL to clipboard")
+        self.copy_url_button.setFixedSize(60, 30)  # Fixed size for better scaling
+        self.copy_url_button.clicked.connect(self._on_copy_url_clicked)
+        self.copy_url_button.setEnabled(False)  # Disabled by default
         url_layout.addWidget(self.copy_url_button)
+        
         layout.addWidget(url_group)
         
         # Log group with debug toggle
         log_group = QGroupBox("Log")
-        log_group.setContentsMargins(15, 15, 15, 15)  # Consistent padding
         log_layout = QVBoxLayout(log_group)
+        log_layout.setContentsMargins(10, 10, 10, 10)  # Reduced padding
         
-        # Add debug mode toggle
-        debug_container = QWidget()
-        debug_layout = QHBoxLayout(debug_container)
-        debug_layout.setContentsMargins(0, 0, 0, 10)
-        
-        self.debug_checkbox = QCheckBox("Debug Mode")
-        self.debug_checkbox.setChecked(False)
-        self.debug_checkbox.stateChanged.connect(self._on_debug_toggled)
-        debug_layout.addWidget(self.debug_checkbox)
-        debug_layout.addStretch()
-        
-        log_layout.addWidget(debug_container)
-        
-        # Log text area with enhanced styling
+        # Log text area
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
-        self.log_text.setFont(QFont("Segoe UI", 10))
         self.log_text.setStyleSheet("""
-            QTextEdit, QTextEdit * {
-                font-family: 'Segoe UI' !important;
-                line-height: 1.6;
-                padding: 10px;
-                background-color: #FFFFFF;
+            QTextEdit {
+                font-family: 'Consolas', 'Courier New', monospace;
+                font-size: 11px;
+                line-height: 1.3;
+                background-color: #f8f8f8;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                padding: 5px;
             }
         """)
+        self.log_text.setMinimumHeight(100)  # Minimum height for log area
         log_layout.addWidget(self.log_text)
         
-        # Button container with improved styling
-        button_container = QWidget()
-        button_layout = QHBoxLayout(button_container)
-        button_layout.setContentsMargins(0, 10, 0, 0)  # Add top padding for separation
-        button_layout.setSpacing(12)
+        # Log controls
+        log_controls = QHBoxLayout()
+        log_controls.setSpacing(8)  # Reduced spacing
         
-        # Copy and Clear buttons with icons and tooltips
-        self.copy_button = QPushButton("📋 Copy Log")
-        self.copy_button.clicked.connect(self._on_copy_log_clicked)
-        self.copy_button.setToolTip("Copy log contents to clipboard")
-        self.copy_button.setStyleSheet("""
-            QPushButton {
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-weight: 500;
-            }
-        """)
+        self.copy_log_button = QPushButton("Copy Log")
+        self.copy_log_button.clicked.connect(self._on_copy_log_clicked)
+        self.copy_log_button.setFixedWidth(80)  # Fixed width for better scaling
         
-        self.clear_button = QPushButton("🗑️ Clear Log")
-        self.clear_button.clicked.connect(self._on_clear_log_clicked)
-        self.clear_button.setToolTip("Clear all log entries")
-        self.clear_button.setStyleSheet("""
-            QPushButton {
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-weight: 500;
-            }
-        """)
+        self.clear_log_button = QPushButton("Clear Log")
+        self.clear_log_button.clicked.connect(self._on_clear_log_clicked)
+        self.clear_log_button.setFixedWidth(80)  # Fixed width for better scaling
         
-        button_layout.addWidget(self.copy_button)
-        button_layout.addWidget(self.clear_button)
-        button_layout.addStretch()
+        self.debug_checkbox = QCheckBox("Debug Mode")
+        self.debug_checkbox.setToolTip("Show detailed debug information in the log")
+        self.debug_checkbox.toggled.connect(self._on_debug_toggled)
         
-        log_layout.addWidget(button_container)
+        log_controls.addWidget(self.copy_log_button)
+        log_controls.addWidget(self.clear_log_button)
+        log_controls.addStretch()
+        log_controls.addWidget(self.debug_checkbox)
+        
+        log_layout.addLayout(log_controls)
         layout.addWidget(log_group)
     
     def _on_scan_button_clicked(self):

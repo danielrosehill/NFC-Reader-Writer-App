@@ -147,12 +147,21 @@ def validate_url(url: str) -> Tuple[bool, str]:
     # Normalize URL format
     normalized_url = url.strip()
     
+    # Fix common URL typos
+    if normalized_url.startswith(('ttps://', 'tps://', 'tp://')):
+        normalized_url = 'h' + normalized_url
+    elif normalized_url.startswith(('ttp://', 'tp://')):
+        normalized_url = 'h' + normalized_url
+    elif normalized_url.startswith('htttps://'):
+        normalized_url = 'https://' + normalized_url[8:]
+    
     # Add protocol if missing
     if normalized_url.startswith('www.'):
         normalized_url = 'https://' + normalized_url
     elif not normalized_url.startswith(('http://', 'https://')):
         # Check if it looks like a domain
-        if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', normalized_url):
+        if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', normalized_url) or \
+           re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', normalized_url):
             normalized_url = 'https://' + normalized_url
     
     # Check if URL is a LAN IP and rewrite https:// to http://
@@ -160,7 +169,7 @@ def validate_url(url: str) -> Tuple[bool, str]:
     if lan_ip_pattern.match(normalized_url):
         normalized_url = 'http://' + normalized_url[8:]  # Replace https:// with http://
     
-    # Basic URL validation
+    # More lenient URL validation
     is_valid = bool(re.match(r'^https?://[^\s/$.?#].[^\s]*$', normalized_url))
     
     return is_valid, normalized_url
@@ -214,8 +223,24 @@ def extract_url_from_data(data: List[int], toHexString) -> Optional[str]:
                             if char in string.printable and char != '':
                                 cleaned_url += char
                         
-                        return prefix + cleaned_url.strip()  # Return cleaned URL
+                        # Get the complete URL
+                        complete_url = prefix + cleaned_url.strip()
                         
+                        # Fix common URL typos
+                        if complete_url.startswith(('ttps://', 'tps://', 'tp://')):
+                            complete_url = 'h' + complete_url
+                        elif complete_url.startswith(('ttp://', 'tp://')):
+                            complete_url = 'h' + complete_url
+                        elif complete_url.startswith('htttps://'):
+                            complete_url = 'https://' + complete_url[8:]
+                        
+                        # Add protocol if missing and looks like a domain
+                        if not complete_url.startswith(('http://', 'https://')):
+                            if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', complete_url) or \
+                               re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', complete_url):
+                                complete_url = 'https://' + complete_url
+                        
+                        return complete_url
                 # Check for Text record
                 for j in range(i+2, i+2+length-4):
                     if data[j] == 0xD1 and data[j+3] == 0x54:  # Text record
@@ -235,7 +260,22 @@ def extract_url_from_data(data: List[int], toHexString) -> Optional[str]:
                                 if char in string.printable and char != '':
                                     cleaned_text += char
                             
-                            return cleaned_text.strip()
+                            cleaned_text = cleaned_text.strip()
+                            
+                            # Check if the text looks like a URL
+                            if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', cleaned_text) or \
+                               re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', cleaned_text):
+                                return 'https://' + cleaned_text
+                                
+                            # Fix common URL typos
+                            if cleaned_text.startswith(('ttps://', 'tps://', 'tp://')):
+                                return 'h' + cleaned_text
+                            elif cleaned_text.startswith(('ttp://', 'tp://')):
+                                return 'h' + cleaned_text
+                            elif cleaned_text.startswith('htttps://'):
+                                return 'https://' + cleaned_text[8:]
+                            
+                            return cleaned_text
         return None
     except Exception:
         return None

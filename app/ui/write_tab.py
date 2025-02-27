@@ -5,7 +5,7 @@ Write Tab UI components for the NFC Reader/Writer application.
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                             QPushButton, QLineEdit, QSpinBox, QCheckBox, 
                             QGroupBox, QSizePolicy, QComboBox, QProgressBar)
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 
 class WriteTab(QWidget):
@@ -27,36 +27,38 @@ class WriteTab(QWidget):
     def setup_ui(self):
         """Setup the write tab interface."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)  # Consistent spacing between major sections
+        layout.setSpacing(10)  # Reduced spacing between major sections
+        
         # Input section
         input_group = QGroupBox("Tag Content")
         input_layout = QVBoxLayout(input_group)
+        input_layout.setContentsMargins(10, 15, 10, 10)  # Reduced horizontal margins
         
         # URL input with tooltip
         input_label = QLabel("Enter URL to write to tag:")
-        input_label.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
-        input_label.setStyleSheet("color: #1976d2; margin-bottom: 8px;")
+        input_label.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        input_label.setStyleSheet("color: #1976d2; margin-bottom: 5px;")
         input_label.setToolTip("Enter a complete URL starting with http://, https://, or www.")
         
         # Add validation label
         self.validation_label = QLabel("")
-        self.validation_label.setStyleSheet("margin-top: 5px;")
+        self.validation_label.setStyleSheet("margin-top: 3px;")
         
         # Add character counter
         self.char_count_label = QLabel("Characters remaining: 137")
-        self.char_count_label.setStyleSheet("color: #666666; margin-top: 5px;")
+        self.char_count_label.setStyleSheet("color: #666666; margin-top: 3px;")
         
         # Input container with buttons
         input_container = QWidget()
         input_container_layout = QHBoxLayout(input_container)
-        input_container_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins for better spacing
-        input_container_layout.setSpacing(8)  # Consistent spacing between elements
+        input_container_layout.setContentsMargins(0, 0, 0, 0)
+        input_container_layout.setSpacing(5)  # Reduced spacing between elements
         
         # Recent URLs dropdown
         self.url_combo = QComboBox()
-        self.url_combo.setMinimumWidth(300)  # Ensure minimum readable width
-        self.url_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)  # Allow expanding horizontally
-        self.url_combo.setMinimumHeight(45)  # Taller for better touch targets
+        self.url_combo.setMinimumWidth(250)  
+        self.url_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.url_combo.setMinimumHeight(35)  # Smaller height for better scaling
         self.url_combo.setEditable(True)
         self.url_combo.setInsertPolicy(QComboBox.InsertPolicy.InsertAtTop)
         self.url_combo.currentTextChanged.connect(self._on_text_changed)
@@ -64,13 +66,13 @@ class WriteTab(QWidget):
         self.write_entry.setStyleSheet("""
             QLineEdit {
                 font-family: 'Segoe UI';
-                font-size: 14px;  /* Slightly smaller font */
-                padding: 8px;  /* Reduced padding */
+                font-size: 13px;
+                padding: 5px;
                 border: 1px solid #e0e0e0;
-                border-radius: 6px;
-                margin-bottom: 10px;  /* Reduced margin */
-                margin-top: 5px;
-                min-width: 300px;  /* Ensure minimum readable width */
+                border-radius: 4px;
+                margin-bottom: 5px;
+                margin-top: 3px;
+                min-width: 250px;
             }
             QLineEdit:focus {
                 border: 2px solid #1976d2;
@@ -86,14 +88,14 @@ class WriteTab(QWidget):
         paste_button = QPushButton("📋")
         paste_button.setToolTip(paste_tooltip)
         paste_button.clicked.connect(self._on_paste_clicked)
-        paste_button.setFixedSize(40, 40)
+        paste_button.setFixedSize(32, 32)  # Smaller button size
         paste_button.setStyleSheet("""
             QPushButton { 
                 color: #1976d2;
                 background-color: white;
                 border: 1px solid #1976d2;
-                border-radius: 20px;
-                font-size: 20px;
+                border-radius: 16px;
+                font-size: 16px;
                 padding: 0;
             }
             QPushButton:hover {
@@ -106,14 +108,14 @@ class WriteTab(QWidget):
         clear_button = QPushButton("🗑️")
         clear_button.setToolTip(clear_tooltip)
         clear_button.clicked.connect(self._on_clear_clicked)
-        clear_button.setFixedSize(40, 40)
+        clear_button.setFixedSize(32, 32)  # Smaller button size
         clear_button.setStyleSheet("""
             QPushButton { 
                 color: #f44336;
                 background-color: white;
                 border: 1px solid #f44336;
-                border-radius: 20px;
-                font-size: 20px;
+                border-radius: 16px;
+                font-size: 16px;
                 padding: 0;
             }
             QPushButton:hover {
@@ -134,7 +136,7 @@ class WriteTab(QWidget):
         test_url_button = QPushButton("🔗 Test URL")
         test_url_button.setToolTip("Open URL in browser to test")
         test_url_button.clicked.connect(self._on_test_url_clicked)
-        test_url_button.setFixedWidth(100)
+        test_url_button.setFixedWidth(80)
         input_container_layout.addWidget(test_url_button)
         
         # Batch writing section
@@ -164,7 +166,7 @@ class WriteTab(QWidget):
         
         self.write_button = QPushButton("Write Tag")
         self.write_button.clicked.connect(self._on_write_clicked)
-        self.write_button.setFixedWidth(180)
+        self.write_button.setFixedWidth(150)
         self.write_button.setEnabled(False)  # Disabled by default
         
         options_layout.addWidget(self.write_button)
@@ -178,26 +180,26 @@ class WriteTab(QWidget):
             QGroupBox {
                 background: white;
                 border: 1px solid #e0e0e0;
-                border-radius: 8px;
-                margin-top: 2em;
+                border-radius: 6px;
+                margin-top: 1.5em;
                 font-weight: bold;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
+                left: 8px;
+                padding: 0 3px;
                 color: #1976d2;
             }
         """)
-        status_layout = QHBoxLayout(status_group)
-        status_layout.setContentsMargins(16, 24, 16, 16)
-        status_layout.setSpacing(16)  # Consistent spacing
+        status_layout = QVBoxLayout(status_group)  # Changed to vertical layout
+        status_layout.setContentsMargins(10, 20, 10, 10)
+        status_layout.setSpacing(10)  # Reduced spacing
 
         # Progress section with label and progress bar
         progress_widget = QWidget()
         progress_layout = QVBoxLayout(progress_widget)
         progress_layout.setContentsMargins(0, 0, 0, 0)
-        progress_layout.setSpacing(5)  # Tight spacing between label and bar
+        progress_layout.setSpacing(3)  # Tighter spacing between label and bar
         
         self.progress_label = QLabel("Ready")
         progress_layout.addWidget(self.progress_label)
@@ -225,6 +227,8 @@ class WriteTab(QWidget):
         tag_status_layout.addWidget(self.tag_status_label)
         tag_status_layout.addStretch()
         
+        status_layout.addWidget(tag_status_widget)
+        
         # Write status
         write_status_widget = QWidget()
         write_status_layout = QHBoxLayout(write_status_widget)
@@ -235,9 +239,10 @@ class WriteTab(QWidget):
         
         self.clear_status_button = QPushButton("Clear Status")
         self.clear_status_button.clicked.connect(self._on_clear_status_clicked)
+        self.clear_status_button.setFixedWidth(100)  # Set fixed width
         write_status_layout.addWidget(self.clear_status_button)
         
-        status_layout.addWidget(tag_status_widget)
+        status_layout.addWidget(write_status_widget)
         layout.addWidget(status_group)
         layout.addStretch()
     
@@ -264,6 +269,28 @@ class WriteTab(QWidget):
     def _on_text_changed(self, text):
         """Handle text changed in the URL field."""
         self.text_changed.emit(text)
+        
+        # Show a temporary confirmation when URL is updated
+        if text.strip():
+            self.show_url_update_confirmation()
+    
+    def show_url_update_confirmation(self):
+        """Show a temporary confirmation that URL has been updated."""
+        # Save current validation label state
+        current_text = self.validation_label.text()
+        current_style = self.validation_label.styleSheet()
+        
+        # Show confirmation
+        self.validation_label.setStyleSheet("color: #4CAF50; margin-top: 3px; font-weight: bold;")
+        self.validation_label.setText("✓ URL updated")
+        
+        # Create a timer to restore the original validation state
+        QTimer.singleShot(1500, lambda: self.restore_validation_state(current_text, current_style))
+    
+    def restore_validation_state(self, text, style):
+        """Restore the validation label to its previous state."""
+        self.validation_label.setText(text)
+        self.validation_label.setStyleSheet(style)
     
     def update_validation(self, is_valid, message):
         """Update the validation label."""
