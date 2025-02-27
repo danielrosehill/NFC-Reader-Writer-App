@@ -11,6 +11,12 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Change to the project directory if not already there
+cd "$(dirname "$0")" || { echo -e "${RED}Failed to change to project directory${NC}"; exit 1; }
+
+# Set repository directory
+REPO_DIR="$(pwd)"
+
 # Print header
 echo -e "${BLUE}====================================================${NC}"
 echo -e "${BLUE}      NFC Reader/Writer Application Builder        ${NC}"
@@ -61,13 +67,13 @@ else
 fi
 
 # Create a backup of the latest build
-BACKUP_DIR="/home/daniel/Programs/created/nfc-reader-writer/backups"
+BACKUP_DIR="${REPO_DIR}/backups"
 mkdir -p "$BACKUP_DIR"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/nfc-rw_backup_$TIMESTAMP.tar.gz"
 
 echo -e "${YELLOW}Creating backup of source code...${NC}"
-tar -czf "$BACKUP_FILE" --exclude="*.pyc" --exclude="__pycache__" --exclude="build" --exclude="dist" -C "/home/daniel/Development/git-repositories/My-Repos" "NFC-rw-0225"
+tar -czf "$BACKUP_FILE" --exclude="*.pyc" --exclude="__pycache__" --exclude="build" --exclude="dist" -C "$REPO_DIR" .
 echo -e "${GREEN}Backup created at: $BACKUP_FILE${NC}"
 
 # Run the build script
@@ -75,17 +81,16 @@ echo -e "${YELLOW}Starting build process...${NC}"
 echo -e "${YELLOW}This may take a few minutes. Please be patient.${NC}"
 echo ""
 
-# Change to the project directory if not already there
-cd "$(dirname "$0")" || { echo -e "${RED}Failed to change to project directory${NC}"; exit 1; }
-
 # Run the Python build script
 if python3 build.py; then
     echo ""
     echo -e "${GREEN}Build completed successfully!${NC}"
-    echo -e "${GREEN}The executable has been created in /home/daniel/Programs/created/nfc-reader-writer/new-builds${NC}"
+    
+    # Get the repository directory
+    echo -e "${GREEN}The executable has been created in ${REPO_DIR}/dist${NC}"
     
     # Check if the executable exists and is executable
-    EXECUTABLE="/home/daniel/Programs/created/nfc-reader-writer/new-builds/nfc-rw"
+    EXECUTABLE="${REPO_DIR}/dist/nfc-rw"
     if [ -f "$EXECUTABLE" ] && [ -x "$EXECUTABLE" ]; then
         echo -e "${GREEN}Executable verified and ready to use.${NC}"
     else
@@ -111,7 +116,7 @@ read -p "Do you want to run the application now? (y/n): " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Launching NFC Reader/Writer application...${NC}"
-    "$EXECUTABLE"
+    "${REPO_DIR}/dist/nfc-rw"
 fi
 
 exit 0

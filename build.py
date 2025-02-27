@@ -12,8 +12,9 @@ import shutil
 
 def main():
     """Main build function."""
-    # Set output directory
-    output_dir = '/home/daniel/Programs/created/nfc-reader-writer/new-builds'
+    # Set output directory within the repository
+    src_dir = os.path.abspath(os.path.dirname(__file__))
+    output_dir = os.path.join(src_dir, 'dist')
     os.makedirs(output_dir, exist_ok=True)
     
     # Create temporary build directory
