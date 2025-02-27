@@ -267,84 +267,79 @@ class WriteTab(QWidget):
     
     def update_validation(self, is_valid, message):
         """Update the validation label."""
-        if is_valid:
-            self.validation_label.setStyleSheet("""
-                color: #4CAF50;
-                font-weight: bold;
-                background-color: #E8F5E9;
-                padding: 4px 8px;
-                border-radius: 4px;
-            """)
-        else:
-            self.validation_label.setStyleSheet("""
-                color: #F44336;
-                font-weight: bold;
-                background-color: #FFEBEE;
-                padding: 4px 8px;
-                border-radius: 4px;
-            """)
-        
-        self.validation_label.setText(message)
+        try:
+            if is_valid:
+                self.validation_label.setStyleSheet("color: green; margin-top: 5px;")
+                self.validation_label.setText("✓ " + message)
+            else:
+                self.validation_label.setStyleSheet("color: red; margin-top: 5px;")
+                self.validation_label.setText("✗ " + message)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     def update_char_count(self, remaining):
         """Update the character count label."""
-        if remaining < 0:
-            self.char_count_label.setStyleSheet("""
-                color: #F44336;
-                font-weight: bold;
-                background-color: #FFEBEE;
-                padding: 4px 8px;
-                border-radius: 4px;
-            """)
-        elif remaining < 20:
-            self.char_count_label.setStyleSheet("""
-                color: #FF9800;
-                font-weight: bold;
-                background-color: #FFF3E0;
-                padding: 4px 8px;
-                border-radius: 4px;
-            """)
-        else:
-            self.char_count_label.setStyleSheet("""
-                color: #666666;
-                padding: 4px 8px;
-            """)
-        
-        self.char_count_label.setText(f"Characters remaining: {remaining}")
+        try:
+            if remaining < 0:
+                self.char_count_label.setStyleSheet("color: red; margin-top: 5px;")
+                self.char_count_label.setText(f"Characters over limit: {abs(remaining)}")
+            else:
+                self.char_count_label.setStyleSheet("color: #666666; margin-top: 5px;")
+                self.char_count_label.setText(f"Characters remaining: {remaining}")
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     def update_write_button(self, enabled):
         """Update the write button state."""
-        self.write_button.setEnabled(enabled)
+        try:
+            self.write_button.setEnabled(enabled)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     def update_tag_status(self, detected, locked=False):
         """Update the tag status indicator."""
-        if detected:
-            if locked:
-                self.tag_indicator.setStyleSheet("background-color: #4CAF50; border-radius: 7px;")  # Green
-                self.tag_status_label.setText("Tag Detected & Locked ✓")
+        try:
+            if detected:
+                self.tag_indicator.setStyleSheet("background-color: green; border-radius: 10px;")
+                self.tag_status_label.setText("Tag Detected" + (" (Locked)" if locked else ""))
             else:
-                self.tag_indicator.setStyleSheet("background-color: #4CAF50; border-radius: 7px;")  # Green
-                self.tag_status_label.setText("Tag Detected")
-        else:
-            self.tag_indicator.setStyleSheet("background-color: #FF9800; border-radius: 7px;")  # Orange for no tag
-            self.tag_status_label.setText("Waiting for Tag...")
+                self.tag_indicator.setStyleSheet("background-color: red; border-radius: 10px;")
+                self.tag_status_label.setText("No Tag Detected")
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     def update_write_status(self, text):
         """Update the write status label."""
-        self.write_status.setText(text)
+        try:
+            self.write_status.setText(text)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     def update_progress(self, text):
         """Update the progress label."""
-        self.progress_label.setText(text)
+        try:
+            self.progress_label.setText(text)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
         
     def update_progress_bar(self, current, total):
         """Update the progress bar with current progress."""
-        if total <= 0:
-            self.progress_bar.setValue(0)
-            return
-            
-        percentage = int((current / total) * 100)
-        self.progress_bar.setValue(percentage)
+        try:
+            if total <= 0:
+                self.progress_bar.setValue(0)
+                return
+                
+            percentage = int((current / total) * 100)
+            self.progress_bar.setValue(percentage)
+        except RuntimeError:
+            # Ignore errors if the UI element has been deleted
+            pass
     
     def get_url(self):
         """Get the current URL text."""

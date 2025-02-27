@@ -548,6 +548,7 @@ class NFCReaderGUI(QMainWindow):
         self.pulse_animation.finished.connect(lambda: self.pulse_animation.setDirection(
             QPropertyAnimation.Direction.Backward if self.pulse_animation.direction() == QPropertyAnimation.Direction.Forward else QPropertyAnimation.Direction.Forward))
         self.pulse_animation.start()
+    
     def toggle_scanning(self, start_scanning=None):
         """Toggle the scanning process."""
         if start_scanning is None:
@@ -797,17 +798,14 @@ class NFCReaderGUI(QMainWindow):
     
     def write_tag(self):
         """Write data to multiple tags."""
-        if not self.nfc_reader.reader:
-            QMessageBox.critical(self, "Error", "Reader not connected")
-            return
-        
+        # Get URL from text field
         text = self.write_tab.get_url()
         if not text:
-            QMessageBox.critical(self, "Error", "Please enter a URL to write to the tag")
+            QMessageBox.critical(self, "Error", "Please enter a URL to write")
             return
         
-        # Enhanced validation to prevent accidental writes
-        if not any(text.startswith(prefix) for prefix in ['http://', 'https://', 'www.']):
+        # Check if URL starts with http://, https://, or www.
+        if not (text.startswith('http://') or text.startswith('https://') or text.startswith('www.')):
             result = QMessageBox.warning(
                 self, 
                 "URL Format Warning",
@@ -842,8 +840,9 @@ class NFCReaderGUI(QMainWindow):
         
         lock = self.write_tab.get_lock_state()
         
-        self.write_tab.update_write_status("Ready - Please present first tag...")
-        self.write_tab.update_progress(f"Starting batch operation: 0/{quantity} tags written")
+        # Use signals to update UI elements instead of direct calls
+        self.write_status_signal.emit("Ready - Please present first tag...")
+        self.progress_signal.emit(f"Starting batch operation: 0/{quantity} tags written")
         
         # Add to recent URLs
         self.write_tab.add_recent_url(text)
@@ -883,9 +882,9 @@ class NFCReaderGUI(QMainWindow):
         
         # Update validation label
         if is_valid:
-            self.write_tab.update_validation(True, "✓ Valid URL format")
+            self.write_tab.update_validation(True, "Valid URL format")
         elif text:
-            self.write_tab.update_validation(False, "✗ Invalid URL format - Must start with http://, https://, or www.")
+            self.write_tab.update_validation(False, "Invalid URL format - Must start with http://, https://, or www.")
         else:
             self.write_tab.update_validation(False, "")
         
