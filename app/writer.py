@@ -60,11 +60,11 @@ class NFCWriter:
             if sw1 != 0x90:
                 return False, f"NDEF initialization failed: {sw1:02X} {sw2:02X}"
             
-            # Write data in chunks of 4 bytes (one page at a time)
             # ACR122U sometimes needs a small delay after initialization
             if is_acr122u:
                 time.sleep(0.05)
                 
+            # Write data in chunks of 4 bytes (one page at a time)
             chunk_size = 4
             for i in range(0, len(ndef_data), chunk_size):
                 chunk = ndef_data[i:i + chunk_size]
@@ -78,11 +78,22 @@ class NFCWriter:
                 response, sw1, sw2 = connection.transmit(write_command)
                 
                 if sw1 != 0x90:
-                    return False, f"Failed to write page {page}"
+                    return False, f"Failed to write page {page}: SW1={sw1:02X} SW2={sw2:02X}"
                 
                 # ACR122U may need a small delay between writes
                 if is_acr122u:
                     time.sleep(0.02)
+            
+            # Verify the write by reading back a few pages
+            try:
+                # Read back the first few pages to verify
+                for page in range(4, min(8, 4 + (len(ndef_data) + 3) // 4)):
+                    read_cmd = commands['READ_PAGE'] + [page, 0x04]
+                    response, sw1, sw2 = connection.transmit(read_cmd)
+                    if sw1 != 0x90:
+                        return False, f"Verification failed: Could not read page {page}"
+            except Exception as e:
+                return False, f"Verification error: {str(e)}"
             
             # Lock the tag if requested
             if lock:
@@ -92,7 +103,7 @@ class NFCWriter:
                     
                 response, sw1, sw2 = connection.transmit(commands['LOCK_CARD'])
                 if sw1 != 0x90:
-                    return False, "Failed to lock tag"
+                    return False, f"Failed to lock tag: SW1={sw1:02X} SW2={sw2:02X}"
                 return True, f"URL written to tag {uid} and locked"
             
             return True, f"URL written to tag {uid}"
@@ -144,21 +155,25 @@ class NFCWriter:
             if prefix_found is not None:
                 # URL record with prefix
                 remaining_bytes = list(remaining_text.encode('utf-8'))
-                ndef_header = [0xD1, 0x01, len(remaining_bytes) + 1] + [0x55]  # Type: U (URL)
+                payload_length = len(remaining_bytes) + 1  # +1 for the prefix byte
+                ndef_header = [0xD1, 0x01, payload_length, 0x55]  # Type: U (URL)
                 record_data = [prefix_found] + remaining_bytes
             else:
                 # Fallback to text if no prefix matched
-                ndef_header = [0xD1, 0x01, len(text_bytes) + 1] + [0x54] + [0x00]  # Type: T (Text)
+                payload_length = len(text_bytes) + 1  # +1 for language code length
+                ndef_header = [0xD1, 0x01, payload_length, 0x54, 0x00]  # Type: T (Text)
                 record_data = text_bytes
         elif looks_like_web:
             # This looks like a web URL without explicit prefix, add http://
             prefix_found = 0x02  # http://
             remaining_bytes = list(text.encode('utf-8'))
-            ndef_header = [0xD1, 0x01, len(remaining_bytes) + 1] + [0x55]  # Type: U (URL)
+            payload_length = len(remaining_bytes) + 1  # +1 for the prefix byte
+            ndef_header = [0xD1, 0x01, payload_length, 0x55]  # Type: U (URL)
             record_data = [prefix_found] + remaining_bytes
         else:
             # Store as plain text (including tel: and mailto: URLs)
-            ndef_header = [0xD1, 0x01, len(text_bytes) + 1] + [0x54] + [0x00]  # Type: T (Text)
+            payload_length = len(text_bytes) + 1  # +1 for language code length
+            ndef_header = [0xD1, 0x01, payload_length, 0x54, 0x00]  # Type: T (Text)
             record_data = text_bytes
         
         # Calculate total length including headers

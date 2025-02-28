@@ -199,19 +199,22 @@ def extract_url_from_data(data: List[int], toHexString) -> Optional[str]:
                     
                 # Check for URL record with improved detection for long URLs
                 for j in range(i+2, i+2+length-4):
-                    if data[j] == 0xD1 and data[j+3] == 0x55:  # URL record
-                        url_prefix_byte = data[j+5]
+                    # Check for URL record (D1 with type U)
+                    if j+3 < len(data) and data[j] == 0xD1 and data[j+3] == 0x55:  # URL record
+                        # Get URL prefix from the first byte of payload
+                        url_prefix_byte = data[j+4]
                         prefix = URL_PREFIXES.get(url_prefix_byte, "")
                         
                         # Calculate the correct end position for the URL content
                         payload_length = data[j+2]
-                        url_end = j + 6 + payload_length - 1  # -1 for the prefix byte
+                        url_start = j + 5  # Skip record header and prefix byte
+                        url_end = j + 5 + payload_length - 1  # -1 for the prefix byte
                         
                         # Ensure we don't exceed array bounds
                         if url_end > len(data):
                             url_end = len(data)
                             
-                        url_content = bytes(data[j+6:url_end]).decode('utf-8', errors='replace')
+                        url_content = bytes(data[url_start:url_end]).decode('utf-8', errors='replace')
                         
                         # Fix for URLs starting with 10.0.0.1
                         if url_content.startswith("0.0.0.1"):

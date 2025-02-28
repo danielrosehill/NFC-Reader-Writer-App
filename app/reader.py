@@ -257,6 +257,8 @@ class NFCReader:
             if sw1 == 0x90:
                 if self.debug_callback:
                     self.debug_callback("Debug", f"CC: {self.toHexString(response)}")
+                # Add CC data to all_data
+                all_data.extend(response)
             else:
                 if self.debug_callback:
                     self.debug_callback("Error", f"CC read failed: SW1={sw1:02X} SW2={sw2:02X}")
@@ -270,9 +272,21 @@ class NFCReader:
         if is_acr122u:
             time.sleep(0.05)
             
-        # NTAG213 has pages 4-39 available for user data
-        for page in range(4, 40):
+        # Determine tag type to know how many pages to read
+        tag_type = self.detect_tag_type(connection)
+        max_page = 40  # Default for NTAG213
+        
+        if tag_type == "NTAG215/216":
+            max_page = 130 if not is_acr122u else 80  # Limit for ACR122U to avoid timeouts
+        
+        # Read data pages
+        found_terminator = False
+        for page in range(4, max_page):
             try:
+                # Add small delay between reads for ACR122U
+                if is_acr122u and page > 4:
+                    time.sleep(0.02)
+                    
                 read_cmd = commands['READ_PAGE'] + [page, 0x04]  # Read 4 bytes
                 response, sw1, sw2 = connection.transmit(read_cmd)
                 
@@ -280,20 +294,24 @@ class NFCReader:
                     all_data.extend(response)
                     if self.debug_callback:
                         self.debug_callback("Debug", f"Page {page}: {self.toHexString(response)}")
+                    
+                    # Check for end of NDEF message (0xFE terminator)
+                    if 0xFE in response:
+                        found_terminator = True
+                        if self.debug_callback:
+                            self.debug_callback("Debug", f"Found NDEF terminator in page {page}")
+                        # Continue reading until the end of this page to ensure we get all data
+                        continue
+                        
+                    # If we've already found the terminator and this page is all zeros, we can stop
+                    if found_terminator and all(b == 0 for b in response):
+                        if self.debug_callback:
+                            self.debug_callback("Debug", f"Found all zeros after terminator in page {page}, stopping read")
+                        break
                 else:
                     if self.debug_callback:
                         self.debug_callback("Debug", f"Read stopped at page {page}: SW1={sw1:02X} SW2={sw2:02X}")
                     break
-                    
-                # Check for end of NDEF message
-                if len(response) >= 4 and response[0] == 0xFE:
-                    if self.debug_callback:
-                        self.debug_callback("Debug", "Found NDEF terminator, stopping read")
-                    break
-                    
-                # ACR122U may need a small delay between page reads
-                if is_acr122u:
-                    time.sleep(0.02)
                     
             except Exception as e:
                 if self.debug_callback:
