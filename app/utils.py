@@ -105,27 +105,25 @@ def open_url_in_browser(url: str) -> bool:
             return False  # Not a URL we can open
         
     try:
-        # Use a safer approach with subprocess.run instead of Popen
-        # First try xdg-open which is more stable
+        # On Linux, use google-chrome as the primary browser
         try:
-            subprocess.run(['xdg-open', url], 
+            subprocess.run(['google-chrome', '--new-window', url], 
                           check=False, 
                           stdout=subprocess.DEVNULL, 
                           stderr=subprocess.DEVNULL,
                           start_new_session=True,
-                          timeout=1)
+                          timeout=1)  
             return True
         except (FileNotFoundError, subprocess.TimeoutExpired):
-            # Fallback to google-chrome
+            # Fallback to xdg-open if google-chrome is not available
             try:
-                subprocess.run(['google-chrome', '--new-window', url], 
+                subprocess.run(['xdg-open', url], 
                               check=False, 
                               stdout=subprocess.DEVNULL, 
                               stderr=subprocess.DEVNULL,
                               start_new_session=True,
-                              timeout=1)  
+                              timeout=1)
                 return True
-                
             except Exception:
                 return False
     except Exception:
