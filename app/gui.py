@@ -571,6 +571,8 @@ class NFCReaderGUI(QMainWindow):
         """Continuous scanning loop."""
         last_uid = None
         last_activity_time = time.time()
+        consecutive_errors = 0
+        max_consecutive_errors = 5
         
         while self.scanning:
             # Check for timeout
@@ -581,6 +583,12 @@ class NFCReaderGUI(QMainWindow):
                 self.status_signal.emit("Status: Scanning timed out - No recent activity")
                 break
             
+            # If we've had too many consecutive errors, take a short break to let the system recover
+            if consecutive_errors >= max_consecutive_errors:
+                self.append_log("System", "Too many consecutive errors - pausing briefly")
+                time.sleep(1.0)  # Take a longer break
+                consecutive_errors = 0  # Reset the counter
+            
             try:
                 if self.nfc_reader.reader:
                     connection, connected = self.nfc_reader.connect_with_retry()
@@ -589,47 +597,62 @@ class NFCReaderGUI(QMainWindow):
                         continue
                     
                     # Get UID
-                    uid = self.nfc_reader.get_tag_uid(connection)
-                    if uid:
-                        # Update UI via signals
-                        self.status_signal.emit("Tag Ready")                        
-                        self.write_status_signal.emit("Tag Ready - Click Write to proceed")
-                        self.write_tab.update_tag_status(True)
-                        self.tag_status.setText("Tag Present")  # Update status bar
-                        
-                        # Detect tag type
-                        try:
-                            tag_type = self.nfc_reader.detect_tag_type(connection)
-                            self.tag_type_label.setText(f"Tag Type: {tag_type}")
-                        except Exception as e:
-                            # Handle exception during tag type detection
-                            if self.debug_mode:
-                                self.append_log("Error", f"Tag type detection failed: {str(e)}")
-                            self.tag_type_label.setText("Tag Type: Unknown")
-                        
-                        # Animate tag indicator in write tab
-                        if hasattr(self.write_tab, 'tag_indicator'):
-                            self.animate_indicator(self.write_tab.tag_indicator)
+                    try:
+                        uid = self.nfc_reader.get_tag_uid(connection)
+                        if uid:
+                            # Reset error counter on successful operation
+                            consecutive_errors = 0
                             
-                        last_activity_time = time.time()
-                        
-                        # Only process if it's a new tag
-                        if uid != last_uid:
-                            last_uid = uid
-                            self.append_log("New tag detected", f"UID: {uid}")
+                            # Update UI via signals
+                            self.status_signal.emit("Tag Ready")                        
+                            self.write_status_signal.emit("Tag Ready - Click Write to proceed")
+                            self.write_tab.update_tag_status(True)
+                            self.tag_status.setText("Tag Present")  # Update status bar
                             
-                            # Read tag memory
+                            # Detect tag type
                             try:
-                                memory_data = self.nfc_reader.read_tag_memory(connection)
-                                if memory_data:
-                                    self.process_ndef_content(memory_data)
+                                tag_type = self.nfc_reader.detect_tag_type(connection)
+                                self.tag_type_label.setText(f"Tag Type: {tag_type}")
                             except Exception as e:
-                                # Handle exception during tag memory reading
+                                # Handle exception during tag type detection
                                 if self.debug_mode:
-                                    self.append_log("Error", f"Failed to read tag memory: {str(e)}")
+                                    self.append_log("Error", f"Tag type detection failed: {str(e)}")
+                                self.tag_type_label.setText("Tag Type: Unknown")
+                            
+                            # Animate tag indicator in write tab
+                            if hasattr(self.write_tab, 'tag_indicator'):
+                                self.animate_indicator(self.write_tab.tag_indicator)
+                                
+                            last_activity_time = time.time()
+                            
+                            # Only process if it's a new tag
+                            if uid != last_uid:
+                                last_uid = uid
+                                self.append_log("New tag detected", f"UID: {uid}")
+                                
+                                # Read tag memory
+                                try:
+                                    memory_data = self.nfc_reader.read_tag_memory(connection)
+                                    if memory_data:
+                                        self.process_ndef_content(memory_data)
+                                except Exception as e:
+                                    # Handle exception during tag memory reading
+                                    if self.debug_mode:
+                                        self.append_log("Error", f"Failed to read tag memory: {str(e)}")
+                    except Exception as uid_error:
+                        # Handle errors during UID reading
+                        consecutive_errors += 1
+                        if self.debug_mode:
+                            self.append_log("Error", f"Failed to read tag UID: {str(uid_error)}")
                     
-                    connection.disconnect()
+                    # Always try to disconnect, but don't crash if it fails
+                    try:
+                        connection.disconnect()
+                    except Exception as disconnect_error:
+                        if self.debug_mode:
+                            self.append_log("Debug", f"Disconnect error: {str(disconnect_error)}")
             except Exception as e:
+                consecutive_errors += 1
                 error_msg = str(e)
                 # Only log errors that aren't common disconnection messages
                 if not any(msg in error_msg.lower() for msg in [
@@ -642,7 +665,9 @@ class NFCReaderGUI(QMainWindow):
                 last_uid = None  # Reset UID on error
                 self.write_tab.update_tag_status(False)  # Update status when tag is removed/error
             
-            time.sleep(0.2)  # Delay between scans
+            # Adaptive sleep time - sleep longer if we're having errors
+            sleep_time = 0.2 + (0.1 * min(consecutive_errors, 3))  # Max additional sleep of 0.3s
+            time.sleep(sleep_time)
     
     def process_ndef_content(self, data: List[int]):
         """Process NDEF content and open URLs if found."""

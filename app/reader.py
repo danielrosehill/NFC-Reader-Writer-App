@@ -111,7 +111,7 @@ class NFCReader:
             
         current_time = time.time()
         # ACR122U may need a slightly longer debounce time
-        min_debounce = 0.15 if is_acr122u else 0.1
+        min_debounce = 0.2 if is_acr122u else 0.15  
         if current_time - self.last_connection_time < min_debounce:
             return None, False
             
@@ -126,7 +126,7 @@ class NFCReader:
         
         # Try different protocols with retries
         # ACR122U sometimes needs more retries
-        max_attempts = 6 if is_acr122u else 5
+        max_attempts = 7 if is_acr122u else 6  
         
         # Prioritize protocols based on reader model
         # ACR122U tends to work better with T0 protocol first
@@ -145,20 +145,30 @@ class NFCReader:
                         
                     # Verify connection with GET_UID command
                     try:
-                        response, sw1, sw2 = connection.transmit(GET_UID)
-                        if sw1 == 0x90:
-                            if self.debug_callback:
-                                self.debug_callback("Debug", f"Connected with protocol: {protocol}")
-                            return connection, True
+                        # Add timeout handling for verification
+                        max_verify_retries = 2
+                        for verify_retry in range(max_verify_retries):
+                            try:
+                                response, sw1, sw2 = connection.transmit(GET_UID)
+                                if sw1 == 0x90:
+                                    if self.debug_callback:
+                                        self.debug_callback("Debug", f"Connected with protocol: {protocol}")
+                                    return connection, True
+                                break  # If we get a response but not 0x90, no need to retry
+                            except Exception as verify_error:
+                                if verify_retry == max_verify_retries - 1:
+                                    # Last retry failed, continue to next protocol
+                                    break
+                                time.sleep(0.1)
                     except:
                         # If UID check fails, connection might not be stable
                         continue
                         
                 except Exception as e:
-                    if attempt == 4 and self.debug_callback:  # Only log on last attempt
+                    if attempt == max_attempts - 1 and self.debug_callback:  # Only log on last attempt
                         self.debug_callback("Debug", f"Connection attempt failed with {protocol}: {str(e)}")
                     # ACR122U may need slightly longer delays between attempts
-                    time.sleep((0.15 if is_acr122u else 0.1) * (attempt + 1))
+                    time.sleep((0.2 if is_acr122u else 0.15) * (attempt + 1))  
                     
                 try:
                     connection.disconnect()

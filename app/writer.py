@@ -42,7 +42,17 @@ class NFCWriter:
             is_acr122u = "ACR122" in reader_str
             commands = get_reader_specific_commands(reader_str)
             
-            response, sw1, sw2 = connection.transmit(commands['GET_UID'])
+            # Add timeout handling for transmit operations
+            max_retries = 3
+            for retry in range(max_retries):
+                try:
+                    response, sw1, sw2 = connection.transmit(commands['GET_UID'])
+                    break
+                except Exception as e:
+                    if retry == max_retries - 1:
+                        return False, f"Tag presence check failed after {max_retries} attempts: {str(e)}"
+                    time.sleep(0.1 * (retry + 1))
+            
             if sw1 != 0x90:
                 return False, f"Tag presence check failed: SW1={sw1:02X} SW2={sw2:02X}"
             
@@ -53,17 +63,27 @@ class NFCWriter:
             
             # ACR122U sometimes needs a small delay before initialization
             if is_acr122u:
-                time.sleep(0.05)
+                time.sleep(0.1)  # Increased from 0.05 for more reliability
             
             # Initialize NDEF capability
             init_command = [0xFF, 0xD6, 0x00, 0x03, 0x04, 0xE1, 0x10, 0x06, 0x0F]
-            response, sw1, sw2 = connection.transmit(init_command)
+            
+            # Add retry logic for initialization
+            for retry in range(max_retries):
+                try:
+                    response, sw1, sw2 = connection.transmit(init_command)
+                    break
+                except Exception as e:
+                    if retry == max_retries - 1:
+                        return False, f"NDEF initialization failed after {max_retries} attempts: {str(e)}"
+                    time.sleep(0.1 * (retry + 1))
+            
             if sw1 != 0x90:
                 return False, f"NDEF initialization failed: {sw1:02X} {sw2:02X}"
             
             # ACR122U sometimes needs a small delay after initialization
             if is_acr122u:
-                time.sleep(0.05)
+                time.sleep(0.1)  # Increased from 0.05 for more reliability
                 
             # Write data in chunks of 4 bytes (one page at a time)
             chunk_size = 4
@@ -76,21 +96,40 @@ class NFCWriter:
                     chunk = chunk + [0] * (chunk_size - len(chunk))
                 
                 write_command = [0xFF, 0xD6, 0x00, page, chunk_size] + chunk
-                response, sw1, sw2 = connection.transmit(write_command)
+                
+                # Add retry logic for writing
+                for retry in range(max_retries):
+                    try:
+                        response, sw1, sw2 = connection.transmit(write_command)
+                        break
+                    except Exception as e:
+                        if retry == max_retries - 1:
+                            return False, f"Failed to write page {page} after {max_retries} attempts: {str(e)}"
+                        time.sleep(0.1 * (retry + 1))
                 
                 if sw1 != 0x90:
                     return False, f"Failed to write page {page}: SW1={sw1:02X} SW2={sw2:02X}"
                 
                 # ACR122U may need a small delay between writes
                 if is_acr122u:
-                    time.sleep(0.02)
+                    time.sleep(0.05)  # Increased from 0.02 for more reliability
             
             # Verify the write by reading back a few pages
             try:
                 # Read back the first few pages to verify
                 for page in range(4, min(8, 4 + (len(ndef_data) + 3) // 4)):
                     read_cmd = commands['READ_PAGE'] + [page, 0x04]
-                    response, sw1, sw2 = connection.transmit(read_cmd)
+                    
+                    # Add retry logic for verification
+                    for retry in range(max_retries):
+                        try:
+                            response, sw1, sw2 = connection.transmit(read_cmd)
+                            break
+                        except Exception as e:
+                            if retry == max_retries - 1:
+                                return False, f"Verification failed: Could not read page {page} after {max_retries} attempts"
+                            time.sleep(0.1 * (retry + 1))
+                    
                     if sw1 != 0x90:
                         return False, f"Verification failed: Could not read page {page}"
             except Exception as e:
@@ -100,9 +139,18 @@ class NFCWriter:
             if lock:
                 # ACR122U sometimes needs a small delay before locking
                 if is_acr122u:
-                    time.sleep(0.1)
-                    
-                response, sw1, sw2 = connection.transmit(commands['LOCK_CARD'])
+                    time.sleep(0.2)  # Increased from 0.1 for more reliability
+                
+                # Add retry logic for locking
+                for retry in range(max_retries):
+                    try:
+                        response, sw1, sw2 = connection.transmit(commands['LOCK_CARD'])
+                        break
+                    except Exception as e:
+                        if retry == max_retries - 1:
+                            return False, f"Failed to lock tag after {max_retries} attempts: {str(e)}"
+                        time.sleep(0.1 * (retry + 1))
+                
                 if sw1 != 0x90:
                     return False, f"Failed to lock tag: SW1={sw1:02X} SW2={sw2:02X}"
                 return True, f"URL written to tag {uid} and locked"
@@ -237,7 +285,21 @@ class NFCWriter:
                     # Get UID to check if it's a new tag
                     reader_str = str(connection.getReader())
                     commands = get_reader_specific_commands(reader_str)
-                    response, sw1, sw2 = connection.transmit(commands['GET_UID'])
+                    
+                    # Add error handling for transmit operation
+                    try:
+                        response, sw1, sw2 = connection.transmit(commands['GET_UID'])
+                    except Exception as transmit_error:
+                        if self.debug_callback:
+                            self.debug_callback("Error", f"Transmit error: {str(transmit_error)}")
+                        # Safely disconnect and continue
+                        try:
+                            connection.disconnect()
+                        except:
+                            pass
+                        time.sleep(0.3)  # Slightly longer delay after error
+                        continue
+                    
                     if sw1 == 0x90:
                         uid = self.toHexString(response)
                         if uid != last_uid:  # Only write to new tags
@@ -246,8 +308,14 @@ class NFCWriter:
                             if status_callback:
                                 status_callback(f"Writing to tag {uid}...")
                             
-                            # Write the URL
-                            success, message = self.write_url_to_tag(connection, url, lock)
+                            # Write the URL with additional error handling
+                            try:
+                                success, message = self.write_url_to_tag(connection, url, lock)
+                            except Exception as write_error:
+                                if self.debug_callback:
+                                    self.debug_callback("Error", f"Write operation error: {str(write_error)}")
+                                success = False
+                                message = f"Write failed: {str(write_error)}"
                             
                             if success:
                                 tags_written += 1
@@ -266,7 +334,12 @@ class NFCWriter:
                                 if status_callback:
                                     status_callback(f"Error: {message}")
                     
-                    connection.disconnect()
+                    # Always try to disconnect, but don't crash if it fails
+                    try:
+                        connection.disconnect()
+                    except Exception as disconnect_error:
+                        if self.debug_callback:
+                            self.debug_callback("Debug", f"Disconnect error: {str(disconnect_error)}")
                     
                 except Exception as e:
                     error_msg = str(e)
@@ -278,7 +351,7 @@ class NFCWriter:
                         status_callback(f"Error: {error_msg}")
                     
                     # Small delay to prevent CPU overload
-                    time.sleep(0.1)
+                    time.sleep(0.2)
         except Exception as e:
             # Catch any exceptions that might occur in the main loop
             if status_callback:
