@@ -107,26 +107,34 @@ def open_url_in_browser(url: str) -> bool:
     try:
         # On Linux, use google-chrome as the primary browser
         try:
-            subprocess.run(['google-chrome', '--new-window', url], 
-                          check=False, 
-                          stdout=subprocess.DEVNULL, 
-                          stderr=subprocess.DEVNULL,
-                          start_new_session=True,
-                          timeout=1)  
+            # Use Popen instead of run to avoid blocking and potential freezes
+            process = subprocess.Popen(
+                ['google-chrome', '--new-window', url], 
+                stdout=subprocess.DEVNULL, 
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+                close_fds=True  # Ensure file descriptors are closed
+            )
+            # Don't wait for process to complete
             return True
-        except (FileNotFoundError, subprocess.TimeoutExpired):
+        except (FileNotFoundError, subprocess.SubprocessError):
             # Fallback to xdg-open if google-chrome is not available
             try:
-                subprocess.run(['xdg-open', url], 
-                              check=False, 
-                              stdout=subprocess.DEVNULL, 
-                              stderr=subprocess.DEVNULL,
-                              start_new_session=True,
-                              timeout=1)
+                # Use Popen instead of run to avoid blocking and potential freezes
+                process = subprocess.Popen(
+                    ['xdg-open', url], 
+                    stdout=subprocess.DEVNULL, 
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                    close_fds=True  # Ensure file descriptors are closed
+                )
+                # Don't wait for process to complete
                 return True
-            except Exception:
+            except (FileNotFoundError, subprocess.SubprocessError) as e:
+                print(f"Failed to open URL with xdg-open: {str(e)}")
                 return False
-    except Exception:
+    except Exception as e:
+        print(f"Error opening URL: {str(e)}")
         return False
 
 def validate_url(url: str) -> Tuple[bool, str]:

@@ -70,6 +70,7 @@ class NFCReaderGUI(QMainWindow):
         self.scan_thread = None
         self.tag_queue = queue.Queue()
         self.scan_timeout = 30  # 30 seconds timeout
+        self.active_threads = []  # Track active threads
         
         # Initialize reader, writer, and copier
         self.nfc_reader = NFCReader(self.readers_func, self.toHexString, self.debug_callback)
@@ -112,6 +113,11 @@ class NFCReaderGUI(QMainWindow):
         
         # Create unified status bar
         self.setup_unified_status_area()
+        
+        # Thread cleanup timer
+        self.thread_cleanup_timer = QTimer()
+        self.thread_cleanup_timer.timeout.connect(self.cleanup_threads)
+        self.thread_cleanup_timer.start(10000)  # Check every 10 seconds
     
     def setup_ui(self):
         """Setup the main user interface."""
@@ -330,8 +336,15 @@ class NFCReaderGUI(QMainWindow):
             
             /* Add spacing between sections */
             QGroupBox {
-                margin-top: 15px;
-                margin-bottom: 5px;
+                border: 1px solid #d0d0d0;
+                border-radius: 12px;
+                margin-top: 1.5em;
+                padding-top: 1.5em;
+                padding: 15px;
+                color: #000000;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ffffff, stop:1 #f8f8f8);
+                border: 1px solid rgba(0,0,0,0.15);
             }
             QTabWidget::pane {
                 border: 1px solid #d0d0d0;
@@ -431,22 +444,6 @@ class NFCReaderGUI(QMainWindow):
                 min-width: 80px;
                 min-height: 24px;
                 padding: 6px;
-            }
-            QGroupBox {
-                border: 1px solid #d0d0d0;
-                border-radius: 12px;
-                margin-top: 1.5em;
-                padding-top: 1.5em;
-                padding: 15px;
-                color: #000000;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ffffff, stop:1 #f8f8f8);
-                border: 1px solid rgba(0,0,0,0.15);
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 3px;
             }
             QCheckBox {
                 color: #000000;
@@ -559,8 +556,12 @@ class NFCReaderGUI(QMainWindow):
             self.read_tab.scan_button.setText("Stop Scanning")
             self.read_tab.scan_button.setStyleSheet("background-color: #c62828;")  # Red for stop
             self.append_log("System", f"Started scanning for tags (will timeout after {self.scan_timeout} seconds of inactivity)")
+            
+            # Create and start a new scan thread
             self.scan_thread = threading.Thread(target=self.scan_loop, daemon=True)
             self.scan_thread.start()
+            self.active_threads.append(self.scan_thread)
+            
         elif not start_scanning and self.scanning:
             self.scanning = False
             self.read_tab.scan_button.setText("Start Scanning")
@@ -574,100 +575,109 @@ class NFCReaderGUI(QMainWindow):
         consecutive_errors = 0
         max_consecutive_errors = 5
         
-        while self.scanning:
-            # Check for timeout
-            if time.time() - last_activity_time > self.scan_timeout:
-                self.append_log("System", f"Scanning stopped after {self.scan_timeout} seconds of inactivity")
-                self.scanning = False
-                # Update UI from main thread
-                self.status_signal.emit("Status: Scanning timed out - No recent activity")
-                break
-            
-            # If we've had too many consecutive errors, take a short break to let the system recover
-            if consecutive_errors >= max_consecutive_errors:
-                self.append_log("System", "Too many consecutive errors - pausing briefly")
-                time.sleep(1.0)  # Take a longer break
-                consecutive_errors = 0  # Reset the counter
-            
-            try:
-                if self.nfc_reader.reader:
-                    connection, connected = self.nfc_reader.connect_with_retry()
-                    if not connected:
-                        time.sleep(0.2)
-                        continue
-                    
-                    # Get UID
-                    try:
-                        uid = self.nfc_reader.get_tag_uid(connection)
-                        if uid:
-                            # Reset error counter on successful operation
-                            consecutive_errors = 0
-                            
-                            # Update UI via signals
-                            self.status_signal.emit("Tag Ready")                        
-                            self.write_status_signal.emit("Tag Ready - Click Write to proceed")
-                            self.write_tab.update_tag_status(True)
-                            self.tag_status.setText("Tag Present")  # Update status bar
-                            
-                            # Detect tag type
-                            try:
-                                tag_type = self.nfc_reader.detect_tag_type(connection)
-                                self.tag_type_label.setText(f"Tag Type: {tag_type}")
-                            except Exception as e:
-                                # Handle exception during tag type detection
-                                if self.debug_mode:
-                                    self.append_log("Error", f"Tag type detection failed: {str(e)}")
-                                self.tag_type_label.setText("Tag Type: Unknown")
-                            
-                            # Animate tag indicator in write tab
-                            if hasattr(self.write_tab, 'tag_indicator'):
-                                self.animate_indicator(self.write_tab.tag_indicator)
-                                
-                            last_activity_time = time.time()
-                            
-                            # Only process if it's a new tag
-                            if uid != last_uid:
-                                last_uid = uid
-                                self.append_log("New tag detected", f"UID: {uid}")
-                                
-                                # Read tag memory
-                                try:
-                                    memory_data = self.nfc_reader.read_tag_memory(connection)
-                                    if memory_data:
-                                        self.process_ndef_content(memory_data)
-                                except Exception as e:
-                                    # Handle exception during tag memory reading
-                                    if self.debug_mode:
-                                        self.append_log("Error", f"Failed to read tag memory: {str(e)}")
-                    except Exception as uid_error:
-                        # Handle errors during UID reading
-                        consecutive_errors += 1
-                        if self.debug_mode:
-                            self.append_log("Error", f"Failed to read tag UID: {str(uid_error)}")
-                    
-                    # Always try to disconnect, but don't crash if it fails
-                    try:
-                        connection.disconnect()
-                    except Exception as disconnect_error:
-                        if self.debug_mode:
-                            self.append_log("Debug", f"Disconnect error: {str(disconnect_error)}")
-            except Exception as e:
-                consecutive_errors += 1
-                error_msg = str(e)
-                # Only log errors that aren't common disconnection messages
-                if not any(msg in error_msg.lower() for msg in [
-                    "card is not connected",
-                    "no smart card inserted",
-                    "card is unpowered"
-                ]):
-                    self.append_log("Error", f"Scan error: {error_msg}")
+        try:
+            while self.scanning:
+                # Check for timeout
+                if time.time() - last_activity_time > self.scan_timeout:
+                    self.append_log("System", f"Scanning stopped after {self.scan_timeout} seconds of inactivity")
+                    self.scanning = False
+                    # Update UI from main thread
+                    self.status_signal.emit("Status: Scanning timed out - No recent activity")
+                    break
                 
-                last_uid = None  # Reset UID on error
-                self.write_tab.update_tag_status(False)  # Update status when tag is removed/error
-            
-            # Adaptive sleep time - sleep longer if we're having errors
-            sleep_time = 0.2 + (0.1 * min(consecutive_errors, 3))  # Max additional sleep of 0.3s
-            time.sleep(sleep_time)
+                # If we've had too many consecutive errors, take a short break to let the system recover
+                if consecutive_errors >= max_consecutive_errors:
+                    self.append_log("System", "Too many consecutive errors - pausing briefly")
+                    time.sleep(1.0)  # Take a longer break
+                    consecutive_errors = 0  # Reset the counter
+                
+                try:
+                    if self.nfc_reader.reader:
+                        connection, connected = self.nfc_reader.connect_with_retry()
+                        if not connected:
+                            time.sleep(0.2)
+                            continue
+                        
+                        # Get UID
+                        try:
+                            uid = self.nfc_reader.get_tag_uid(connection)
+                            if uid:
+                                # Reset error counter on successful operation
+                                consecutive_errors = 0
+                                
+                                # Update UI via signals
+                                self.status_signal.emit("Tag Ready")                        
+                                self.write_status_signal.emit("Tag Ready - Click Write to proceed")
+                                self.write_tab.update_tag_status(True)
+                                self.tag_status.setText("Tag Present")  # Update status bar
+                                
+                                # Detect tag type
+                                try:
+                                    tag_type = self.nfc_reader.detect_tag_type(connection)
+                                    self.tag_type_label.setText(f"Tag Type: {tag_type}")
+                                except Exception as e:
+                                    # Handle exception during tag type detection
+                                    if self.debug_mode:
+                                        self.append_log("Error", f"Tag type detection failed: {str(e)}")
+                                    self.tag_type_label.setText("Tag Type: Unknown")
+                                
+                                # Animate tag indicator in write tab
+                                if hasattr(self.write_tab, 'tag_indicator'):
+                                    self.animate_indicator(self.write_tab.tag_indicator)
+                                    
+                                last_activity_time = time.time()
+                                
+                                # Only process if it's a new tag
+                                if uid != last_uid:
+                                    last_uid = uid
+                                    self.append_log("New tag detected", f"UID: {uid}")
+                                    
+                                    # Read tag memory
+                                    try:
+                                        memory_data = self.nfc_reader.read_tag_memory(connection)
+                                        if memory_data:
+                                            self.process_ndef_content(memory_data)
+                                    except Exception as e:
+                                        # Handle exception during tag memory reading
+                                        if self.debug_mode:
+                                            self.append_log("Error", f"Failed to read tag memory: {str(e)}")
+                        except Exception as uid_error:
+                            # Handle errors during UID reading
+                            consecutive_errors += 1
+                            if self.debug_mode:
+                                self.append_log("Error", f"Failed to read tag UID: {str(uid_error)}")
+                        
+                        # Always try to disconnect, but don't crash if it fails
+                        try:
+                            connection.disconnect()
+                        except Exception as disconnect_error:
+                            if self.debug_mode:
+                                self.append_log("Debug", f"Disconnect error: {str(disconnect_error)}")
+                except Exception as e:
+                    consecutive_errors += 1
+                    error_msg = str(e)
+                    # Only log errors that aren't common disconnection messages
+                    if not any(msg in error_msg.lower() for msg in [
+                        "card is not connected",
+                        "no smart card inserted",
+                        "card is unpowered"
+                    ]):
+                        self.append_log("Error", f"Scan error: {error_msg}")
+                    
+                    last_uid = None  # Reset UID on error
+                    self.write_tab.update_tag_status(False)  # Update status when tag is removed/error
+                
+                # Adaptive sleep time - sleep longer if we're having errors
+                sleep_time = 0.2 + (0.1 * min(consecutive_errors, 3))  # Max additional sleep of 0.3s
+                time.sleep(sleep_time)
+        except Exception as e:
+            # Catch any unhandled exceptions in the scan loop to prevent app crashes
+            self.append_log("Critical Error", f"Scan loop error: {str(e)}")
+            self.status_signal.emit(f"Status: Scanning stopped due to error: {str(e)}")
+            self.scanning = False
+            # Update UI to reflect stopped scanning
+            self.read_tab.scan_button.setText("Start Scanning")
+            self.read_tab.scan_button.setStyleSheet("")
     
     def process_ndef_content(self, data: List[int]):
         """Process NDEF content and open URLs if found."""
@@ -687,8 +697,10 @@ class NFCReaderGUI(QMainWindow):
                     except Exception as e:
                         self.log_signal.emit("Error", f"Error opening URL: {str(e)}")
                 
-                # Start the thread
-                threading.Thread(target=open_url_thread, daemon=True).start()
+                # Start the thread and track it
+                url_thread = threading.Thread(target=open_url_thread, daemon=True)
+                url_thread.start()
+                self.active_threads.append(url_thread)
                 
         except Exception as e:
             self.append_log("Error", f"Error parsing NDEF: {str(e)}")
@@ -873,7 +885,7 @@ class NFCReaderGUI(QMainWindow):
         self.write_tab.add_recent_url(text)
         
         # Start batch write in a separate thread
-        threading.Thread(
+        write_thread = threading.Thread(
             target=self.nfc_writer.batch_write_tags,
             args=(self.nfc_reader, text, quantity, lock),
             kwargs={
@@ -881,7 +893,9 @@ class NFCReaderGUI(QMainWindow):
                 'status_callback': self.on_write_status
             },
             daemon=True
-        ).start()
+        )
+        write_thread.start()
+        self.active_threads.append(write_thread)
     
     def on_write_progress(self, tags_written, total):
         """Callback for write progress updates."""
@@ -1028,3 +1042,27 @@ class NFCReaderGUI(QMainWindow):
         self.copy_tab.enable_stop_button(False)
         self.copy_tab.enable_copy_button(True)
         self.copy_tab.enable_read_button(True)
+
+    def cleanup_threads(self):
+        """Clean up completed threads to prevent memory leaks."""
+        # Remove threads that have completed
+        self.active_threads = [t for t in self.active_threads if t.is_alive()]
+        
+    def closeEvent(self, event):
+        """Handle window close event to clean up resources."""
+        # Stop scanning if active
+        if self.scanning:
+            self.toggle_scanning(False)
+        
+        # Stop all timers
+        self.check_reader_timer.stop()
+        self.queue_timer.stop()
+        self.thread_cleanup_timer.stop()
+        
+        # Wait for active threads to finish (with timeout)
+        for thread in self.active_threads:
+            if thread.is_alive():
+                thread.join(0.5)  # Wait up to 0.5 seconds for each thread
+        
+        # Let the event propagate
+        super().closeEvent(event)
