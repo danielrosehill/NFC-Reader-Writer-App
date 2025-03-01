@@ -147,6 +147,16 @@ def validate_url(url: str) -> Tuple[bool, str]:
     # Normalize URL format
     normalized_url = url.strip()
     
+    # Handle tel: prefix on web URLs
+    if normalized_url.startswith('tel:') and ('.' in normalized_url or '/' in normalized_url.replace('tel:', '')):
+        # This is likely a web URL incorrectly tagged with tel: prefix
+        web_url = normalized_url.replace('tel:', '').strip()
+        if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', web_url) or \
+           re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', web_url):
+            normalized_url = 'https://' + web_url
+        else:
+            normalized_url = 'http://' + web_url
+    
     # Fix common URL typos
     if normalized_url.startswith(('ttps://', 'tps://', 'tp://')):
         normalized_url = 'h' + normalized_url
@@ -228,6 +238,17 @@ def extract_url_from_data(data: List[int], toHexString) -> Optional[str]:
                         
                         # Get the complete URL
                         complete_url = prefix + cleaned_url.strip()
+                        
+                        # Check if this is a tel: prefix but actually looks like a web URL
+                        if complete_url.startswith('tel:') and ('.' in cleaned_url or '/' in cleaned_url):
+                            # This is likely a web URL incorrectly tagged with tel: prefix
+                            # Strip the tel: prefix and check if it looks like a domain
+                            web_url = cleaned_url.strip()
+                            if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', web_url) or \
+                               re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', web_url):
+                                complete_url = 'https://' + web_url
+                            else:
+                                complete_url = 'http://' + web_url
                         
                         # Fix common URL typos
                         if complete_url.startswith(('ttps://', 'tps://', 'tp://')):

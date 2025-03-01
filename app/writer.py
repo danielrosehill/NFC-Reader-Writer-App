@@ -4,6 +4,7 @@ NFC Writer functionality for the NFC Reader/Writer application.
 
 import time
 from typing import List, Tuple, Callable, Any, Optional
+import re
 
 from app.utils import GET_UID, LOCK_CARD, get_reader_specific_commands
 
@@ -163,6 +164,24 @@ class NFCWriter:
                 payload_length = len(text_bytes) + 1  # +1 for language code length
                 ndef_header = [0xD1, 0x01, payload_length, 0x54, 0x00]  # Type: T (Text)
                 record_data = text_bytes
+        elif text.startswith('tel:') and ('.' in text or '/' in text.replace('tel:', '')):
+            # This is likely a web URL incorrectly prefixed with tel:
+            web_url = text.replace('tel:', '').strip()
+            if re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', web_url) or \
+               re.match(r'^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}', web_url):
+                # Add https:// prefix and treat as URL
+                prefix_found = 0x03  # https://
+                remaining_bytes = list(web_url.encode('utf-8'))
+                payload_length = len(remaining_bytes) + 1  # +1 for the prefix byte
+                ndef_header = [0xD1, 0x01, payload_length, 0x55]  # Type: U (URL)
+                record_data = [prefix_found] + remaining_bytes
+            else:
+                # Add http:// prefix and treat as URL
+                prefix_found = 0x02  # http://
+                remaining_bytes = list(web_url.encode('utf-8'))
+                payload_length = len(remaining_bytes) + 1  # +1 for the prefix byte
+                ndef_header = [0xD1, 0x01, payload_length, 0x55]  # Type: U (URL)
+                record_data = [prefix_found] + remaining_bytes
         elif looks_like_web:
             # This looks like a web URL without explicit prefix, add http://
             prefix_found = 0x02  # http://
