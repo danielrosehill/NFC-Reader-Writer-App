@@ -87,9 +87,17 @@ chmod +x run.py
 
 ## Building Packages
 
+The application can be built into various package formats using the consolidated build script:
+
 ### Standalone Executable
 
-To build a standalone executable:
+To build only the standalone executable:
+
+```bash
+python build.py --executable-only
+```
+
+or simply:
 
 ```bash
 python build.py
@@ -102,7 +110,7 @@ This will create an executable in the `dist` directory.
 To build an AppImage for Linux:
 
 ```bash
-python build_appimage.py
+python build.py --appimage
 ```
 
 This will create an AppImage in the `dist` directory that can be run on most Linux distributions without installation.
@@ -112,13 +120,21 @@ This will create an AppImage in the `dist` directory that can be run on most Lin
 To build a Debian package (.deb) for Ubuntu:
 
 ```bash
-python build_deb.py
+python build.py --deb
 ```
 
 This will create a .deb package in the `dist` directory that can be installed with:
 
 ```bash
 sudo dpkg -i dist/nfc-reader-writer_1.0.0_amd64.deb
+```
+
+### Building All Package Formats
+
+To build both the AppImage and Debian package at once:
+
+```bash
+python build.py --all
 ```
 
 The Debian package automatically:
