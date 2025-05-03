@@ -25,7 +25,8 @@ class CopyTab(QWidget):
     def setup_ui(self):
         """Setup the copy tab interface."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)  # Reduced spacing between major sections
+        layout.setSpacing(5)  # Reduced spacing between major sections
+        layout.setContentsMargins(5, 5, 5, 5)  # Minimal padding around the entire tab
         
         # Status section
         self.copy_status_label = QLabel("Status: Waiting for reader...")
@@ -39,7 +40,7 @@ class CopyTab(QWidget):
         # Source tag section
         source_group = QGroupBox("Source Tag")
         source_layout = QVBoxLayout(source_group)
-        source_layout.setContentsMargins(10, 10, 10, 10)  # Reduced padding
+        source_layout.setContentsMargins(5, 5, 5, 5)  # Reduced padding
         # Source tag info with improved display for long URLs
         source_layout.addWidget(QLabel("Source Tag Content:"))
         self.source_tag_info = QLabel("No source tag scanned yet")
@@ -48,10 +49,10 @@ class CopyTab(QWidget):
                 font-family: 'Segoe UI';
                 font-size: 11px;
                 color: #1976D2;
-                padding: 5px;
+                padding: 4px;
                 background-color: #E3F2FD;
                 border-radius: 3px; 
-                min-height: 50px;
+                min-height: 30px;
             }
         """)
         self.source_tag_info.setWordWrap(True)
@@ -60,7 +61,8 @@ class CopyTab(QWidget):
         # Read source tag button
         self.read_source_button = QPushButton("Read & Store Tag")
         self.read_source_button.clicked.connect(self._on_read_source_clicked)
-        self.read_source_button.setFixedWidth(150)  # Smaller width
+        self.read_source_button.setMinimumWidth(100)
+        self.read_source_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         source_layout.addWidget(self.read_source_button, alignment=Qt.AlignmentFlag.AlignCenter)
         
         layout.addWidget(source_group)
@@ -68,7 +70,7 @@ class CopyTab(QWidget):
         # Copy configuration section
         copy_config_group = QGroupBox("Copy Configuration")
         copy_config_layout = QVBoxLayout(copy_config_group)
-        copy_config_layout.setContentsMargins(10, 10, 10, 10)  # Reduced padding
+        copy_config_layout.setContentsMargins(5, 5, 5, 5)  # Reduced padding
         # Number of copies
         # Use grid layout instead of horizontal layout for better responsiveness
         copies_grid = QGridLayout()
@@ -97,8 +99,8 @@ class CopyTab(QWidget):
         # Copy operation section
         copy_op_group = QGroupBox("Copy Operation")
         copy_op_layout = QVBoxLayout(copy_op_group)
-        copy_op_layout.setContentsMargins(10, 10, 10, 10)  # Reduced padding
-        copy_op_layout.setSpacing(8)  # Reduced spacing
+        copy_op_layout.setContentsMargins(5, 5, 5, 5)  # Reduced padding
+        copy_op_layout.setSpacing(5)  # Reduced spacing
         
         # Progress section with label and progress bar
         progress_widget = QWidget()

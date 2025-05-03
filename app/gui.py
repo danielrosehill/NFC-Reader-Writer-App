@@ -9,8 +9,9 @@ import queue
 import urllib.request
 from typing import Optional, List, Tuple
 
-from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget, 
-                            QMessageBox, QApplication, QLabel, QHBoxLayout)
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTabWidget,
+                             QMessageBox, QApplication, QLabel, QHBoxLayout,
+                             QSizePolicy)
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot, QByteArray, QSize, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QFont, QIcon, QPixmap, QKeySequence, QShortcut, QColor, QPalette
 
@@ -86,7 +87,7 @@ class NFCReaderGUI(QMainWindow):
         # Setup status bar with additional info
         self.setup_status_bar()
         
-        self.setMinimumSize(600, 500)  # Set minimum window size
+        self.setMinimumSize(800, 650)  # Further increased minimum window size for better content display
         self.setWindowIcon(QIcon('launcher-icon/acr_1252.ico'))
         self.debug_mode = False  # Debug mode disabled by default
         
@@ -124,6 +125,8 @@ class NFCReaderGUI(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(15, 15, 15, 15)  # Add more padding around the entire UI
+        layout.setSpacing(15)  # Increase spacing between major UI elements
         
         # Create tab widget with modern styling
         self.tab_widget = QTabWidget()
@@ -131,22 +134,23 @@ class NFCReaderGUI(QMainWindow):
         self.tab_widget.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.tab_widget.setTabEnabled(0, True)
         self.tab_widget.setTabEnabled(1, True)
+        # Set a more compact tab style
         self.tab_widget.setStyleSheet("""
             QTabWidget::pane {
                 border: 1px solid #e0e0e0;
-                border-radius: 8px;
+                border-radius: 4px;
                 background: white;
                 margin-top: -1px;
             }
             QTabBar::tab {
-                padding: 10px 20px;
-                margin-right: 2px;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
+                padding: 6px 10px;
+                margin-right: 1px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
                 border: 1px solid #e0e0e0;
                 border-bottom: none;
                 background: #f5f5f5;
-                font-size: 13px;
+                font-size: 12px;
             }
             QTabBar::tab:selected {
                 background: white;
@@ -249,9 +253,11 @@ class NFCReaderGUI(QMainWindow):
         self.status_bar.setStyleSheet("""
             QStatusBar {
                 border-top: 1px solid #d0d0d0;
+                font-size: 11px;
             }
             QLabel {
-                padding: 3px 6px;
+                padding: 2px 4px;
+                font-size: 11px;
             }
         """)
     
@@ -260,35 +266,40 @@ class NFCReaderGUI(QMainWindow):
         # Create a widget to hold the unified status area
         self.unified_status_widget = QWidget()
         self.unified_status_layout = QHBoxLayout(self.unified_status_widget)
-        self.unified_status_layout.setContentsMargins(10, 5, 10, 5)
-        self.unified_status_layout.setSpacing(10)
+        self.unified_status_layout.setContentsMargins(5, 3, 5, 3)
+        self.unified_status_layout.setSpacing(5)
         
         # Reader status indicator
         self.reader_indicator = QLabel()
-        self.reader_indicator.setFixedSize(15, 15)
-        self.reader_indicator.setStyleSheet("background-color: #FFA500; border-radius: 7px;")
+        self.reader_indicator.setFixedSize(10, 10)
+        self.reader_indicator.setStyleSheet("background-color: #FFA500; border-radius: 5px;")
         
         # Reader status text
         self.reader_status_text = QLabel("Reader: Not Connected")
+        self.reader_status_text.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+        self.reader_status_text.setStyleSheet("font-size: 11px;")
         
         # Tag type indicator
         self.tag_type_label = QLabel("Tag Type: Unknown")
-        self.tag_type_label.setStyleSheet("color: #1976d2; font-weight: bold;")
+        self.tag_type_label.setStyleSheet("color: #1976d2; font-weight: bold; font-size: 11px;")
+        self.tag_type_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.tag_type_label.setWordWrap(True)
         
         # Add to layout
         self.unified_status_layout.addWidget(self.reader_indicator)
         self.unified_status_layout.addWidget(self.reader_status_text)
         self.unified_status_layout.addWidget(self.tag_type_label)
-        self.unified_status_layout.addStretch()
         
         # Add to main window at the top
         self.centralWidget().layout().insertWidget(0, self.unified_status_widget)
         self.status_bar.setStyleSheet("""
             QStatusBar {
                 border-top: 1px solid #d0d0d0;
+                font-size: 11px;
             }
             QLabel {
-                padding: 3px 6px;
+                padding: 2px 4px;
+                font-size: 11px;
             }
         """)
     
@@ -355,15 +366,15 @@ class NFCReaderGUI(QMainWindow):
             QTabBar::tab {
                 background-color: #f0f0f0;
                 color: #000000;
-                padding: 14px 32px;
+                padding: 6px 10px;
                 border: 1px solid #d0d0d0;
                 border-bottom: none;
-                margin-right: 4px;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
+                margin-right: 2px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
                 font-weight: 600;
-                font-size: 13px;
-                min-width: 120px;
+                font-size: 12px;
+                min-width: 50px;
             }
             QTabBar::tab:selected {
                 background-color: #ffffff;

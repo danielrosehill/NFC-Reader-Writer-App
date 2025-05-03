@@ -26,13 +26,14 @@ class ReadTab(QWidget):
     def setup_ui(self):
         """Setup the read tab interface."""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)  # Reduced spacing between major sections
+        layout.setSpacing(5)  # Reduced spacing between major sections
+        layout.setContentsMargins(5, 5, 5, 5)  # Minimal padding around the entire tab
         
         # Status section with modern card-like design
         # Simplified status label with better compact view support
         self.status_label = QLabel("Status: Waiting for reader...")
         self.status_label.setObjectName("status_label")
-        self.status_label.setMinimumHeight(20)
+        self.status_label.setMinimumHeight(20)  # Reduced minimum height
         self.status_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.status_label.setWordWrap(True)
@@ -41,12 +42,14 @@ class ReadTab(QWidget):
         # Scan button
         self.scan_button = QPushButton("Start Scanning")
         self.scan_button.clicked.connect(self._on_scan_button_clicked)
-        self.scan_button.setFixedWidth(150)  # Smaller width
+        # Use minimum width instead of fixed width for better scaling
+        self.scan_button.setMinimumWidth(120)
+        self.scan_button.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.scan_button, alignment=Qt.AlignmentFlag.AlignCenter)
         
         # URL Detection group
         url_group = QGroupBox("Detected URL")
-        url_group.setContentsMargins(10, 10, 10, 10)  # Reduced padding
+        url_group.setContentsMargins(5, 5, 5, 5)  # Reduced padding
         url_layout = QHBoxLayout(url_group)
         self.url_label = QLabel("")
         self.url_label.setStyleSheet("""
@@ -54,11 +57,11 @@ class ReadTab(QWidget):
                 font-family: 'Segoe UI';
                 font-size: 11px;
                 color: #1976D2;
-                padding: 5px;
+                padding: 4px;
                 border: 1px solid #e0e0e0;
                 border-radius: 4px;
                 background-color: #f5f5f5;
-                min-height: 30px;
+                min-height: 25px;
             }
         """)
         self.url_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -71,7 +74,8 @@ class ReadTab(QWidget):
         # Add copy button for URL
         self.copy_url_button = QPushButton("Copy")
         self.copy_url_button.setToolTip("Copy URL to clipboard")
-        self.copy_url_button.setFixedSize(60, 30)  # Fixed size for better scaling
+        self.copy_url_button.setMinimumWidth(80)
+        self.copy_url_button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self.copy_url_button.clicked.connect(self._on_copy_url_clicked)
         self.copy_url_button.setEnabled(False)  # Disabled by default
         url_layout.addWidget(self.copy_url_button)
@@ -81,7 +85,7 @@ class ReadTab(QWidget):
         # Log group with debug toggle
         log_group = QGroupBox("Log")
         log_layout = QVBoxLayout(log_group)
-        log_layout.setContentsMargins(10, 10, 10, 10)  # Reduced padding
+        log_layout.setContentsMargins(5, 5, 5, 5)  # Reduced padding
         
         # Log text area
         self.log_text = QTextEdit()
@@ -94,10 +98,10 @@ class ReadTab(QWidget):
                 background-color: #f8f8f8;
                 border: 1px solid #e0e0e0;
                 border-radius: 4px;
-                padding: 5px;
+                padding: 4px;
             }
         """)
-        self.log_text.setMinimumHeight(100)  # Minimum height for log area
+        self.log_text.setMinimumHeight(100)  # Reduced minimum height for log area
         log_layout.addWidget(self.log_text)
         
         # Log controls
@@ -106,11 +110,13 @@ class ReadTab(QWidget):
         
         self.copy_log_button = QPushButton("Copy Log")
         self.copy_log_button.clicked.connect(self._on_copy_log_clicked)
-        self.copy_log_button.setFixedWidth(80)  # Fixed width for better scaling
+        self.copy_log_button.setMinimumWidth(80)
+        self.copy_log_button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         
         self.clear_log_button = QPushButton("Clear Log")
         self.clear_log_button.clicked.connect(self._on_clear_log_clicked)
-        self.clear_log_button.setFixedWidth(80)  # Fixed width for better scaling
+        self.clear_log_button.setMinimumWidth(80)
+        self.clear_log_button.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         
         self.debug_checkbox = QCheckBox("Debug Mode")
         self.debug_checkbox.setToolTip("Show detailed debug information in the log")
