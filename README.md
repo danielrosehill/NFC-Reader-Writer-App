@@ -13,10 +13,29 @@ A user-friendly application for reading and writing NFC tags using the ACR1252U 
 
 ## Requirements
 
-- Python 3.6+
+- Python 3.11 (recommended for best compatibility)
 - PyQt6
 - pyscard
 - ACR1252U NFC Reader or compatible device
+
+### System Dependencies
+
+Before installing the Python packages, you need to install these system dependencies:
+
+**On Ubuntu/Debian:**
+```bash
+sudo apt-get install libpcsclite-dev swig
+```
+
+**On Fedora/RHEL/CentOS:**
+```bash
+sudo dnf install pcsc-lite-devel swig
+```
+
+**On macOS (using Homebrew):**
+```bash
+brew install pcsc-lite swig
+```
 
 ## Installation
 
@@ -26,9 +45,29 @@ A user-friendly application for reading and writing NFC tags using the ACR1252U 
    cd NFC-Reader-Writer-App
    ```
 
-2. Install the required packages:
+2. Create a virtual environment (recommended):
+   
+   **Using venv:**
+   ```bash
+   python3.11 -m venv .venv
+   source .venv/bin/activate  # On Linux/macOS
+   # or
+   .venv\Scripts\activate     # On Windows
+   ```
+   
+   **Using uv (faster alternative):**
+   ```bash
+   uv venv --python=3.11 .venv
+   source .venv/bin/activate  # On Linux/macOS
+   # or
+   .venv\Scripts\activate     # On Windows
+   ```
+
+3. Install the required packages:
    ```
    pip install -r requirements.txt
+   # or using uv (faster)
+   uv pip install -r requirements.txt
    ```
 
 ## Usage
@@ -45,6 +84,47 @@ Or make it executable and run directly:
 chmod +x run.py
 ./run.py
 ```
+
+## Building Packages
+
+### Standalone Executable
+
+To build a standalone executable:
+
+```bash
+python build.py
+```
+
+This will create an executable in the `dist` directory.
+
+### AppImage (Linux)
+
+To build an AppImage for Linux:
+
+```bash
+python build_appimage.py
+```
+
+This will create an AppImage in the `dist` directory that can be run on most Linux distributions without installation.
+
+### Debian Package (Ubuntu)
+
+To build a Debian package (.deb) for Ubuntu:
+
+```bash
+python build_deb.py
+```
+
+This will create a .deb package in the `dist` directory that can be installed with:
+
+```bash
+sudo dpkg -i dist/nfc-reader-writer_1.0.0_amd64.deb
+```
+
+The Debian package automatically:
+- Installs required system dependencies (libpcsclite1, libpcsclite-dev, swig)
+- Adds desktop integration (application menu entry and icon)
+- Configures user permissions for NFC access
 
 ## Project Structure
 
